@@ -1,0 +1,8 @@
+.app {
+  @include v.flex-center;
+  flex-direction: column;
+  gap: v.$gap * 2;
+  min-height: 100%;
+  padding: v.$gap;
+  padding-bottom: 20vh;
+}
