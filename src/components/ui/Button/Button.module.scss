@@ -1,0 +1,71 @@
+// M3 common buttons: filled / tonal / text
+
+.button {
+  @include t.type(label-large);
+  @include t.focus-ring;
+
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: t.space(2);
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 t.space(6);
+  border: none;
+  border-radius: t.radius(full);
+  background: transparent;
+  white-space: nowrap;
+  user-select: none;
+  transition: transform t.duration(short) t.easing(standard);
+
+  &:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.38;
+  }
+}
+
+.filled {
+  @include t.state-layer(on-primary);
+
+  background: t.color(primary);
+  color: t.color(on-primary);
+
+  &.danger {
+    @include t.state-layer(on-error);
+
+    background: t.color(error);
+    color: t.color(on-error);
+  }
+}
+
+.tonal {
+  @include t.state-layer(on-secondary-container);
+
+  background: t.color(secondary-container);
+  color: t.color(on-secondary-container);
+
+  &.danger {
+    @include t.state-layer(on-error-container);
+
+    background: t.color(error-container);
+    color: t.color(on-error-container);
+  }
+}
+
+.text {
+  @include t.state-layer(primary);
+
+  padding: 0 t.space(3);
+  color: t.color(primary);
+
+  &.danger {
+    @include t.state-layer(error);
+
+    color: t.color(error);
+  }
+}

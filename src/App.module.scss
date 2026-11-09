@@ -1,8 +1,172 @@
+// 页面本身不滚动。两种状态：
+// - 首页：时钟在上，图标区从 --home-offset 处开始（超出部分被裁切）
+// - 展开（.expanded）：时钟退避，背景模糊，图标区上移铺满，内部滚动；顶部悬浮返回按钮与搜索框，隐藏设置入口
+// 切换动画（.switching）期间图标区不可滚动：切换只负责进入 / 退出，不附带滚动。
+// 编排（时长 extra-long，曲线 expressive）：
+// - 展开：时钟快速淡出并上移 → 图标区上滑 → 搜索框稍后淡入
+// - 收起：搜索框先快速淡出 → 图标区下滑 → 时钟稍后淡入
+// - 主屏只显示 行 × 列 个图标，其余图标的“追赶”动画见 NavGrid.module.scss
+
+$panel-header-height: 72px;
+
+
 .app {
-  @include v.flex-center;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.toolbar {
+  position: fixed;
+  top: t.space(4);
+  right: t.space(4);
+  z-index: 2;
+  transition:
+    opacity t.duration(medium) t.easing(standard),
+    visibility t.duration(medium) allow-discrete;
+}
+
+// 资源库中隐藏设置入口
+.toolbar-hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+// ---- 时钟区 ------------------------------------------------------------------
+
+.hero {
+  display: flex;
+  justify-content: center;
+
+  // 顶部距离来自设置（homeTopOffset，占窗口高度的百分比）
+  padding: var(--home-top, 18vh) t.space(4) 0;
+
+  // 收起：等图标区先让开再淡入
+  transition:
+    opacity t.duration(long) t.easing(standard) t.duration(short),
+    transform t.duration(extra-long) t.easing(expressive),
+    filter t.duration(long) t.easing(standard) t.duration(short);
+
+  .expanded & {
+    opacity: 0;
+    transform: translateY(-48px) scale(0.94);
+    filter: blur(t.blur(sm));
+    pointer-events: none;
+
+    // 展开：快速淡出，位移与图标区同步
+    transition:
+      opacity t.duration(medium) t.easing(standard),
+      transform t.duration(extra-long) t.easing(expressive),
+      filter t.duration(medium) t.easing(standard);
+  }
+}
+
+// ---- 背景模糊层 --------------------------------------------------------------
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: t.alpha(surface, 30%);
+  opacity: 0;
+  backdrop-filter: blur(t.blur(md)) saturate(1.2);
+  pointer-events: none;
+  transition: opacity t.duration(extra-long) t.easing(standard);
+
+  .expanded & {
+    opacity: 1;
+  }
+}
+
+// ---- 图标区 ------------------------------------------------------------------
+
+.panel {
+  position: absolute;
+  inset: 0;
+
+  // 首页：顶栏在可视区之外（被时钟区遮挡且透明），图标从 --home-offset 开始
+  transform: translateY(calc(var(--home-offset) - #{$panel-header-height}));
+  transition: transform t.duration(extra-long) t.easing(expressive);
+
+  .expanded & {
+    transform: none;
+  }
+}
+
+// 悬浮顶栏（借鉴 liquid glass 的悬浮思路）：浮在列表之上，列表从下方滚过而不是被裁切；
+// 控件本身保持 Pixel 扁平样式
+.panel-header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  height: $panel-header-height;
+  padding: 0 t.space(4);
+  opacity: 0;
+  pointer-events: none;
+
+  // 收起：先快速淡出
+  transition: opacity t.duration(short) t.easing(standard);
+
+  .expanded & {
+    opacity: 1;
+
+    // 展开：图标区接近落位时再淡入
+    transition: opacity t.duration(long) t.easing(standard) t.duration(medium);
+  }
+}
+
+// 左上：返回 / 排序 / 搜索（展开式）三个圆形按钮；栏宽与下方图标网格一致
+.header-bar {
+  @include t.nav-grid-width;
+
+  display: flex;
+  gap: t.space(2);
+  align-items: center;
+
+  // 图标在格子里居中，可见边缘比格子边界内缩 (格宽 - 图标尺寸) / 2；
+  // 顶栏同样内缩，使按钮与图标的可见边缘对齐
+  padding-inline: calc((#{t.layout(tile-width)} - #{t.layout(icon-size)}) / 2);
+
+  .expanded & {
+    pointer-events: auto;
+  }
+}
+
+// 首屏：图标区位置依赖首帧测量（--home-offset），从初始值过渡过去会看到图标滑入
+.booting {
+  .hero,
+  .panel {
+    transition: none;
+  }
+}
+
+.scroller {
+  position: absolute;
+  inset: 0;
+  display: flex;
   flex-direction: column;
-  gap: v.$gap * 2;
-  min-height: 100%;
-  padding: v.$gap;
-  padding-bottom: 20vh;
+  align-items: center;
+  overflow: hidden;
+
+  // 顶部留出顶栏高度；内容滚动时从顶栏下方经过
+  padding: #{$panel-header-height} t.space(4) t.space(16);
+  overscroll-behavior: contain;
+
+  // 展开且动画结束后才允许滚动
+  .expanded:not(.switching) & {
+    overflow-y: auto;
+  }
+
+  // 滚动边缘：内容滚到窗口顶边时自然淡出，而不是被硬切（liquid glass 的 scroll edge）
+  .expanded & {
+    mask-image: linear-gradient(to bottom, transparent, t.color(shadow) t.space(6));
+  }
+
+  > * {
+    flex-shrink: 0;
+  }
 }

@@ -1,0 +1,71 @@
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.space(2);
+}
+
+.swatch {
+  @include t.flex-center;
+
+  // 色块颜色由 --swatch 传入（用户内容色），默认为图标底色 token
+  --swatch: #{t.color(tile)};
+
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: t.radius(full);
+  outline: 1px solid t.color(outline-variant);
+  outline-offset: 0;
+  background: var(--swatch);
+  cursor: pointer;
+  transition: outline-offset t.duration(short) t.easing(standard);
+
+  &[aria-checked='true'] {
+    outline: 2px solid t.color(primary);
+    outline-offset: 2px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.color(primary);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+// “跟随主题”：半明半暗
+.theme {
+  background: linear-gradient(135deg, t.color(surface) 50%, t.color(on-surface) 50%);
+}
+
+.custom {
+  color: t.color(on-surface-variant);
+
+  &:has(.native:focus-visible) {
+    outline: 2px solid t.color(primary);
+    outline-offset: 2px;
+  }
+
+  // 已选中自定义色时隐藏图标，直接显示颜色
+  &[aria-checked='true'] svg {
+    display: none;
+  }
+}
+
+.native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.disabled {
+  opacity: 0.38;
+  pointer-events: none;
+}

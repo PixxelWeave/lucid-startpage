@@ -1,0 +1,80 @@
+// M3 switch：track 52×32，handle 未选中 16 / 选中 24
+
+.switch {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+  border: 2px solid t.color(outline);
+  border-radius: t.radius(full);
+  background: t.color(surface-container-highest);
+  transition:
+    background-color t.duration(short) t.easing(standard),
+    border-color t.duration(short) t.easing(standard);
+
+  &:has(.input:checked) {
+    border-color: t.color(primary);
+    background: t.color(primary);
+  }
+
+  &:has(.input:focus-visible) {
+    outline: 2px solid t.color(primary);
+    outline-offset: 2px;
+  }
+
+  &:has(.input:disabled) {
+    opacity: 0.38;
+  }
+}
+
+.input {
+  position: absolute;
+  inset: -2px;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.handle {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 16px;
+  height: 16px;
+  border-radius: t.radius(full);
+  background: t.color(outline);
+  transition:
+    left t.duration(medium) t.easing(emphasized-decelerate),
+    top t.duration(medium) t.easing(emphasized-decelerate),
+    width t.duration(medium) t.easing(emphasized-decelerate),
+    height t.duration(medium) t.easing(emphasized-decelerate),
+    background-color t.duration(short) t.easing(standard);
+
+  .input:checked + & {
+    top: 2px;
+    left: 22px;
+    width: 24px;
+    height: 24px;
+    background: t.color(on-primary);
+  }
+
+  .input:active:not(:disabled) + & {
+    top: 0;
+    width: 28px;
+    height: 28px;
+  }
+
+  .input:active:not(:checked, :disabled) + & {
+    left: 0;
+  }
+
+  .input:checked:active:not(:disabled) + & {
+    left: 20px;
+  }
+}

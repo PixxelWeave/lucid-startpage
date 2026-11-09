@@ -1,0 +1,32 @@
+.snackbar {
+  @include t.type(body-medium);
+
+  // 重置 popover 默认居中，固定在底部中央
+  inset: auto auto t.space(6) 50%;
+  min-width: 200px;
+  max-width: min(560px, 100vw - 32px);
+  margin: 0;
+  padding: t.space(3) t.space(4);
+  border: none;
+  border-radius: t.radius(xs);
+  background: t.color(inverse-surface);
+  color: t.color(inverse-on-surface);
+  box-shadow: t.elevation(3);
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition:
+    opacity t.duration(short) t.easing(standard),
+    transform t.duration(medium) t.easing(emphasized-decelerate),
+    overlay t.duration(medium) allow-discrete,
+    display t.duration(medium) allow-discrete;
+
+  &:popover-open {
+    opacity: 1;
+    transform: translate(-50%, 0);
+
+    @starting-style {
+      opacity: 0;
+      transform: translate(-50%, 8px);
+    }
+  }
+}

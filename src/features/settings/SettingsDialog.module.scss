@@ -1,0 +1,180 @@
+// 左右分栏：左侧分类导航，右侧说明卡片 + 分组设置项
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  height: 100%;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(2);
+  overflow-y: auto;
+  padding: t.space(3);
+  border-right: 1px solid t.color(outline-variant);
+  background: t.color(surface-container-low);
+}
+
+.sidebar-header {
+  display: flex;
+  gap: t.space(1);
+  align-items: center;
+  padding-bottom: t.space(2);
+}
+
+.sidebar-title {
+  @include t.type(title-large);
+
+  margin: 0;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-item {
+  @include t.type(label-large);
+  @include t.state-layer(on-surface);
+  @include t.focus-ring;
+
+  position: relative;
+  display: flex;
+  gap: t.space(3);
+  align-items: center;
+  width: 100%;
+  height: 48px;
+  padding: 0 t.space(3);
+  border: none;
+  border-radius: t.radius(full);
+  background: transparent;
+  color: t.color(on-surface);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.nav-item-active {
+  @include t.state-layer(on-secondary-container);
+
+  background: t.color(secondary-container);
+  color: t.color(on-secondary-container);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(4);
+  overflow-y: auto;
+  padding: t.space(6);
+  animation: fade-in t.duration(medium) t.easing(emphasized-decelerate);
+
+  // 内容超出时滚动，而不是压缩卡片
+  > * {
+    flex-shrink: 0;
+  }
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(2);
+  align-items: center;
+  padding: t.space(8) t.space(6);
+  text-align: center;
+}
+
+// 时钟预览：放在页面底色上，与主屏上的实际效果一致；
+// 吸顶，调整下方选项时预览始终可见
+.hero.preview {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  justify-content: center;
+  min-height: 176px;
+  outline: 1px solid t.color(outline-variant);
+  outline-offset: -1px;
+  background: t.color(surface);
+}
+
+.hero-title {
+  @include t.type(headline-small);
+
+  margin: t.space(2) 0 0;
+}
+
+.hero-description {
+  @include t.type(body-medium);
+
+  margin: 0;
+  color: t.color(on-surface-variant);
+}
+
+// 外观 › 背景图片预览：无图时为占位提示；有图时叠加与首页相同的 surface 遮罩
+.background-preview {
+  @include t.type(body-medium);
+  @include t.flex-center;
+
+  position: relative;
+  flex-direction: column;
+  gap: t.space(2);
+  aspect-ratio: 16 / 9;
+  max-height: 200px;
+  margin: t.space(4) t.space(4) t.space(1);
+  overflow: hidden;
+  border-radius: t.radius(md);
+  background: t.color(surface-container-high) center / cover no-repeat;
+  color: t.color(on-surface-variant);
+}
+
+.background-preview-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: t.alpha(surface, var(--preview-dim, 0%));
+}
+
+// 窄屏：分类改为顶部横向滚动
+@media (width < 640px) {
+  .layout {
+    grid-template-rows: auto 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .sidebar {
+    overflow: visible;
+    padding-bottom: t.space(2);
+    border-right: none;
+    border-bottom: 1px solid t.color(outline-variant);
+  }
+
+  .nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .nav-item {
+    width: auto;
+  }
+
+  .content {
+    min-height: 0;
+    padding: t.space(4);
+  }
+
+  .hero {
+    padding: t.space(6) t.space(4);
+  }
+}

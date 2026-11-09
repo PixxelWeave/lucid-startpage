@@ -1,0 +1,134 @@
+// iOS home screen 式图块：长按进入编辑模式抖动，左上角 “−” 删除
+
+@keyframes jiggle {
+  0%,
+  100% {
+    rotate: -1.6deg;
+  }
+
+  50% {
+    rotate: 1.6deg;
+  }
+}
+
+.tile {
+  width: t.layout(tile-width);
+  touch-action: manipulation;
+}
+
+.body {
+  position: relative;
+}
+
+.link {
+  @include t.focus-ring;
+
+  display: flex;
+  flex-direction: column;
+  gap: t.space(2);
+  align-items: center;
+  padding: t.space(2) 0;
+  border-radius: t.radius(lg);
+  color: inherit;
+  text-decoration: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.icon {
+  display: block;
+  border-radius: t.radius(lg);
+  transition:
+    transform t.duration(medium) t.easing(emphasized-decelerate),
+    box-shadow t.duration(medium) t.easing(standard);
+
+  .link:hover & {
+    transform: scale(1.04);
+  }
+
+  .link:active & {
+    transform: scale(0.94);
+  }
+}
+
+.label {
+  @include t.type(body-medium);
+
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0 t.space(1);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove {
+  @include t.flex-center;
+  @include t.focus-ring;
+
+  position: absolute;
+  top: t.space(0);
+  left: t.space(2);
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: t.radius(full);
+  background: t.color(surface-container-highest);
+  color: t.color(on-surface);
+  box-shadow: t.elevation(1);
+  transition: transform t.duration(medium) t.easing(emphasized-decelerate);
+
+  @starting-style {
+    transform: scale(0);
+  }
+
+  &:active {
+    transform: scale(0.88);
+  }
+}
+
+// ---- 编辑模式 ---------------------------------------------------------------
+
+.editing {
+  .body {
+    animation: jiggle 280ms ease-in-out infinite;
+  }
+
+  &:nth-child(2n) .body {
+    animation-duration: 300ms;
+    animation-delay: -140ms;
+  }
+
+  &:nth-child(3n) .body {
+    animation-duration: 260ms;
+    animation-delay: -60ms;
+  }
+
+  .link {
+    cursor: grab;
+  }
+
+  .link:hover .icon {
+    transform: none;
+  }
+}
+
+.placeholder {
+  opacity: 0;
+}
+
+.lifted {
+  .body {
+    animation: none;
+  }
+
+  .link {
+    cursor: grabbing;
+  }
+
+  .icon,
+  .link:hover .icon {
+    box-shadow: t.elevation(3);
+    transform: scale(1.12);
+  }
+}

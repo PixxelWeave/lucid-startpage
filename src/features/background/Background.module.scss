@@ -1,0 +1,29 @@
+// 原图层：盖在 <body> 的模糊占位图之上，加载完成后淡入。
+// 遮罩用 surface 色：浅色主题提亮、深色主题压暗，两种主题下文字对比度都会提高。
+// --background-dim 由 paint.ts 写在 :root 上。
+
+.background {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity t.duration(long) t.easing(standard);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: t.alpha(surface, var(--background-dim, 0%));
+  }
+}
+
+.loaded {
+  opacity: 1;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

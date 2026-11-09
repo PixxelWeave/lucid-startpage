@@ -1,0 +1,37 @@
+.tile {
+  @include t.flex-center;
+
+  flex-shrink: 0;
+}
+
+.sm {
+  width: 28px;
+  height: 28px;
+  border-radius: t.radius(sm);
+}
+
+.lg {
+  width: 64px;
+  height: 64px;
+  border-radius: t.radius(lg);
+}
+
+.primary {
+  background: t.color(primary-container);
+  color: t.color(on-primary-container);
+}
+
+.secondary {
+  background: t.color(secondary-container);
+  color: t.color(on-secondary-container);
+}
+
+.tertiary {
+  background: t.color(tertiary-container);
+  color: t.color(on-tertiary-container);
+}
+
+.neutral {
+  background: t.color(surface-container-highest);
+  color: t.color(on-surface-variant);
+}

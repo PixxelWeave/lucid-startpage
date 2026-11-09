@@ -1,18 +1,44 @@
+// 时钟的字体 / 字重 / 颜色 / 不透明度来自设置：
+// 字体与字重通过 data-font / data-weight 选择 token，颜色与不透明度通过 CSS 变量传入
+
 .clock {
+  opacity: var(--clock-opacity, 1);
   text-align: center;
   user-select: none;
 }
 
 .time {
+  @include t.type(display-hero);
+
   display: block;
-  font-size: clamp(3.5rem, 12vw, 6rem);
-  font-weight: 200;
+  color: var(--clock-color, #{t.color(on-surface)});
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  line-height: 1;
+
+  .compact & {
+    @include t.type(display-large);
+  }
+}
+
+// 只改字体族 / 字重，字号与行高仍取 display-hero（行高固定，字体加载前后高度不变）
+@each $font in (rounded, serif, mono) {
+  [data-font='#{$font}'] .time {
+    @include t.font-family($font);
+  }
+}
+
+@each $weight in (light, regular, bold) {
+  [data-weight='#{$weight}'] .time {
+    @include t.font-weight($weight);
+  }
 }
 
 .date {
-  margin-top: v.$gap * 0.5;
-  color: var(--color-text-muted);
+  @include t.type(title-medium);
+
+  margin-top: t.space(3);
+  color: var(--clock-color, #{t.color(on-surface-variant)});
+
+  .compact & {
+    margin-top: t.space(1);
+  }
 }

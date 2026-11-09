@@ -1,0 +1,67 @@
+.item {
+  position: relative;
+  display: flex;
+  gap: t.space(4);
+  align-items: center;
+  width: 100%;
+  min-height: 56px;
+  padding: t.space(3) t.space(4);
+  border: none;
+  background: none;
+  color: t.color(on-surface);
+  text-align: left;
+
+  // 行间分隔线（缩进，对齐 macOS / Pixel 设置）
+  & + &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: t.space(4);
+    left: t.space(4);
+    border-top: 1px solid t.color(outline-variant);
+  }
+}
+
+.interactive {
+  @include t.state-layer(on-surface);
+
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid t.color(primary);
+    outline-offset: -2px;
+  }
+}
+
+.text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  @include t.type(body-large);
+}
+
+.description {
+  @include t.type(body-medium);
+
+  color: t.color(on-surface-variant);
+}
+
+.trailing {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  color: t.color(on-surface-variant);
+}
+
+.danger .title {
+  color: t.color(error);
+}
+
+.disabled {
+  cursor: default;
+  opacity: 0.38;
+}

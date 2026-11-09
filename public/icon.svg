@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Lucid：两条半透明笔画叠成 L，交叠处更亮。唯一源文件，构建时栅格化为扩展图标 PNG（vite.config.ts） -->
+  <rect x="8" y="8" width="112" height="112" rx="30" fill="#415f91"/>
+  <rect x="38" y="28" width="22" height="72" rx="11" fill="#fff" fill-opacity="0.55"/>
+  <rect x="38" y="78" width="54" height="22" rx="11" fill="#fff" fill-opacity="0.8"/>
+</svg>

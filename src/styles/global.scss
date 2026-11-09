@@ -1,25 +1,23 @@
 :root {
-  --color-bg: #f5f5f7;
-  --color-surface: #ffffff;
-  --color-text: #1d1d1f;
-  --color-text-muted: #6e6e73;
-  --color-border: #d2d2d7;
-  --color-accent: #0a84ff;
+  @include t.emit-static-vars;
+  @include t.emit-color-vars(light);
 
-  color-scheme: light dark;
-  font-family: v.$font-sans;
-  line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
 }
 
+// 主题：默认跟随系统；设置里可通过 <html data-theme="light|dark"> 强制指定
 @media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #111113;
-    --color-surface: #1c1c1f;
-    --color-text: #f5f5f7;
-    --color-text-muted: #98989d;
-    --color-border: #38383c;
+  :root:not([data-theme='light']) {
+    @include t.emit-color-vars(dark);
+
+    color-scheme: dark;
   }
+}
+
+:root[data-theme='dark'] {
+  @include t.emit-color-vars(dark);
+
+  color-scheme: dark;
 }
 
 *,
@@ -35,13 +33,43 @@ body,
 }
 
 body {
+  @include t.type(body-medium);
+
+  // 页面本身不滚动，滚动只发生在展开后的图标区内部
+  overflow: hidden;
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
+  overscroll-behavior: none;
+  background: t.color(surface);
+  color: t.color(on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+
+// 自定义背景图：首屏先铺模糊占位图 + 遮罩（变量由 features/background/paint.ts 写入），
+// 原图加载后由 <Background> 淡入覆盖
+:root[data-background] body {
+  background:
+    linear-gradient(t.alpha(surface, var(--background-dim)) 0 0),
+    var(--background-placeholder) center / cover no-repeat t.color(surface);
 }
 
 input,
-button {
+button,
+textarea,
+select {
   font: inherit;
   color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

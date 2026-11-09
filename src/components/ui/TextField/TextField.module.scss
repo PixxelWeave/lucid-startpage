@@ -1,0 +1,54 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(1);
+}
+
+.label {
+  @include t.type(label-medium);
+
+  padding: 0 t.space(1);
+  color: t.color(on-surface-variant);
+}
+
+.input {
+  @include t.type(body-large);
+
+  width: 100%;
+  height: 48px;
+  padding: 0 t.space(4);
+  border: none;
+  border-radius: t.radius(md);
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  background: t.color(surface-container-highest);
+  color: t.color(on-surface);
+  transition: outline-color t.duration(short) t.easing(standard);
+
+  &::placeholder {
+    color: t.color(on-surface-variant);
+  }
+
+  &:focus {
+    outline-color: t.color(primary);
+  }
+}
+
+.support {
+  @include t.type(label-medium);
+
+  padding: 0 t.space(1);
+  color: t.color(on-surface-variant);
+}
+
+.invalid {
+  .label,
+  .support {
+    color: t.color(error);
+  }
+
+  .input,
+  .input:focus {
+    outline-color: t.color(error);
+  }
+}

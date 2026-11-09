@@ -1,0 +1,27 @@
+.icon-button {
+  @include t.flex-center;
+  @include t.state-layer(on-surface-variant);
+  @include t.focus-ring;
+
+  position: relative;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: t.radius(full);
+  background: transparent;
+  color: t.color(on-surface-variant);
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.38;
+  }
+}
+
+.tonal {
+  @include t.state-layer(on-secondary-container);
+
+  background: t.color(secondary-container);
+  color: t.color(on-secondary-container);
+}

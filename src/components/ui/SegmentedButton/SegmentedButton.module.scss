@@ -1,0 +1,47 @@
+.group {
+  display: flex;
+  overflow: hidden;
+  height: 40px;
+  border: 1px solid t.color(outline);
+  border-radius: t.radius(full);
+}
+
+.segment {
+  @include t.type(label-large);
+  @include t.state-layer(on-surface);
+  @include t.focus-ring;
+
+  position: relative;
+  display: inline-flex;
+  flex: 1 0 auto;
+  gap: t.space(2);
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 t.space(3);
+  border: none;
+  background: transparent;
+  color: t.color(on-surface);
+  white-space: nowrap;
+  transition: background-color t.duration(short) t.easing(standard);
+
+  & + & {
+    border-left: 1px solid t.color(outline);
+  }
+
+  &[aria-checked='true'] {
+    @include t.state-layer(on-secondary-container);
+
+    background: t.color(secondary-container);
+    color: t.color(on-secondary-container);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+
+  // 选中标记不随空间不足而被压扁
+  svg {
+    flex-shrink: 0;
+  }
+}

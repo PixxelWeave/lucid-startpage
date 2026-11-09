@@ -1,0 +1,109 @@
+// M3 menu：卡片容器 + 菜单项；进场为从锚点方向轻微放大淡入
+
+.menu {
+  // 重置 popover 的默认居中布局，位置由 JS 设置 left / top
+  inset: auto;
+  min-width: 200px;
+  max-width: 280px;
+  margin: 0;
+  padding: t.space(2) 0;
+  border: none;
+  border-radius: t.radius(lg);
+  background: t.color(surface-container);
+  color: t.color(on-surface);
+  box-shadow: t.elevation(2);
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity t.duration(short) t.easing(standard),
+    transform t.duration(short) t.easing(emphasized-accelerate),
+    overlay t.duration(short) allow-discrete,
+    display t.duration(short) allow-discrete;
+
+  &:popover-open {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity t.duration(short) t.easing(standard),
+      transform t.duration(medium) t.easing(emphasized-decelerate),
+      overlay t.duration(medium) allow-discrete,
+      display t.duration(medium) allow-discrete;
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+  }
+}
+
+.header {
+  padding: t.space(1) t.space(4) t.space(2);
+}
+
+.title {
+  @include t.type(title-medium);
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtitle {
+  @include t.type(body-medium);
+
+  overflow: hidden;
+  color: t.color(on-surface-variant);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  @include t.type(label-large);
+  @include t.state-layer(on-surface);
+
+  position: relative;
+  display: flex;
+  gap: t.space(3);
+  align-items: center;
+  width: 100%;
+  height: 48px;
+  padding: 0 t.space(4);
+  border: none;
+  background: none;
+  color: t.color(on-surface);
+  text-align: left;
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  // 键盘焦点用 state layer 表示（菜单内常见做法），不画外框
+  &:focus-visible::after {
+    opacity: t.state(focus);
+  }
+}
+
+.icon {
+  flex-shrink: 0;
+  color: t.color(on-surface-variant);
+}
+
+.danger {
+  @include t.state-layer(error);
+
+  color: t.color(error);
+
+  .icon {
+    color: t.color(error);
+  }
+}
+
+.divider {
+  margin: t.space(2) 0;
+  border-top: 1px solid t.color(outline-variant);
+}

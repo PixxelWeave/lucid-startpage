@@ -1,0 +1,160 @@
+// 双栏：左侧预览 + 调整，右侧网址 / 名称 / 候选图标
+.form {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: t.space(6);
+  align-items: start;
+}
+
+.editor,
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(4);
+  min-width: 0;
+}
+
+// 窄屏：单栏，网址等信息在上
+@media (width < 720px) {
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .details {
+    order: -1;
+  }
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(2);
+  align-items: center;
+  padding: t.space(6) t.space(4) t.space(4);
+  border-radius: t.radius(lg);
+  background: t.color(surface-container);
+}
+
+.preview-label {
+  @include t.type(body-medium);
+
+  overflow: hidden;
+  max-width: 100%;
+  color: t.color(on-surface-variant);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(2);
+}
+
+.section-title {
+  @include t.type(label-medium);
+
+  margin: 0;
+  padding: 0 t.space(1);
+  color: t.color(on-surface-variant);
+}
+
+// 候选图标
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: t.space(2);
+  overflow-y: auto;
+  max-height: 220px;
+  padding: t.space(1);
+}
+
+.option {
+  @include t.focus-ring;
+
+  display: flex;
+  flex-direction: column;
+  gap: t.space(1);
+  align-items: center;
+  min-width: 0;
+  padding: t.space(1) 0;
+  border: none;
+  border-radius: t.radius(md);
+  background: none;
+  color: t.color(on-surface-variant);
+
+  > :first-child {
+    transition: transform t.duration(short) t.easing(standard);
+  }
+
+  &:hover > :first-child {
+    transform: scale(1.05);
+  }
+}
+
+.option-selected {
+  color: t.color(primary);
+
+  > :first-child {
+    outline: 2px solid t.color(primary);
+    outline-offset: 2px;
+  }
+}
+
+.option-label {
+  @include t.type(label-medium);
+
+  overflow: hidden;
+  max-width: 100%;
+  padding: 0 t.space(1);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-tile {
+  @include t.flex-center;
+
+  width: 48px;
+  height: 48px;
+  border: 1px dashed t.color(outline);
+  border-radius: t.radius(md);
+  color: t.color(on-surface-variant);
+}
+
+.hint {
+  @include t.type(label-medium);
+
+  margin: 0;
+  padding: 0 t.space(1);
+  color: t.color(on-surface-variant);
+}
+
+.error {
+  @include t.type(label-medium);
+
+  margin: 0;
+  padding: 0 t.space(1);
+  color: t.color(error);
+}
+
+// 调整
+.adjust {
+  flex-shrink: 0;
+}
+
+.color-row {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(3);
+  margin: 0 t.space(4);
+  padding: t.space(3) 0 t.space(4);
+  border-top: 1px solid t.color(outline-variant);
+}
+
+.color-label {
+  @include t.type(body-large);
+}
+
+.muted {
+  opacity: 0.38;
+}

@@ -1,0 +1,190 @@
+.grid {
+  @include t.nav-grid-width;
+
+  // 主屏区域框（.home-frame）以网格区域定位、置于图标之下
+  position: relative;
+  isolation: isolate;
+  transition: padding-top t.duration(long) t.easing(expressive);
+
+  // 固定列数（来自设置，见 --grid-cols），主屏与资源库共用同一网格；末行靠左（同手机主屏）。
+  // 列宽 / 列间距与 t.nav-grid-width 一致，资源库顶栏与网格同宽
+  display: grid;
+  grid-template-columns: repeat(#{t.grid-cols()}, t.layout(tile-width));
+  gap: t.space(4) t.space(2);
+}
+
+// “添加” 图块，与 NavTile 外形一致
+.add {
+  @include t.focus-ring;
+
+  display: flex;
+  flex-direction: column;
+  gap: t.space(2);
+  align-items: center;
+  width: t.layout(tile-width);
+  padding: t.space(2) 0;
+  border: none;
+  border-radius: t.radius(lg);
+  background: none;
+  color: t.color(on-surface-variant);
+  user-select: none;
+}
+
+.add-icon {
+  @include t.flex-center;
+  @include t.state-layer(on-surface);
+
+  position: relative;
+  width: t.layout(icon-size);
+  height: t.layout(icon-size);
+  border-radius: t.radius(lg);
+  background: t.color(surface-container);
+  transition: transform t.duration(medium) t.easing(emphasized-decelerate);
+
+  .add:hover & {
+    transform: scale(1.04);
+  }
+
+  .add:active & {
+    transform: scale(0.94);
+  }
+}
+
+.add-label {
+  @include t.type(body-medium);
+}
+
+.empty {
+  @include t.type(body-large);
+
+  margin: t.space(8) 0 0;
+  color: t.color(on-surface-variant);
+  text-align: center;
+}
+
+// ---- 资源库剩余图标（超出主屏 行 × 列 的部分）--------------------------------
+// 主屏时隐藏于下方；进入资源库时比主屏图标（随图标区整体上移）多走 $chase-distance、
+// 稍晚起步并按行递增延迟 —— 速度更快，从下方“追”上来，两者形成速度差。
+// data-chase 在 NavTile 的内层元素上（根元素的 transition 由拖拽库内联接管），“添加”在其根元素上。
+
+$chase-distance: 40vh;
+$chase-delay: 60ms;
+$chase-row-stagger: 30ms;
+
+.grid [data-chase='hidden'] {
+  opacity: 0;
+  translate: 0 $chase-distance;
+
+  // 返回主屏：快速下沉淡出
+  transition:
+    opacity t.duration(short) t.easing(standard),
+    translate t.duration(long) t.easing(emphasized-accelerate);
+}
+
+.grid [data-chase='shown'] {
+  $delay: calc(var(--chase-row, 0) * #{$chase-row-stagger} + #{$chase-delay});
+
+  opacity: 1;
+  translate: none;
+  transition:
+    opacity t.duration(long) t.easing(standard) $delay,
+    translate t.duration(extra-long) t.easing(expressive) $delay;
+}
+
+// ---- 主屏区域框（资源库 + 编辑模式）-----------------------------------------
+// 绝对定位的网格子项：以 grid-row / grid-column 指定的网格区域为参照，不参与自动排布，
+// 因此始终框住前 --home-rows 行；拖动图标进出时即可看到哪些会显示在主屏。
+
+// 为框顶部的“主屏”标签让出空间，避免被悬浮顶栏遮挡
+.grid-framed {
+  padding-top: t.space(4);
+}
+
+.home-frame {
+  position: absolute;
+  z-index: -1;
+  grid-row: 1 / span var(--home-rows);
+  grid-column: 1 / -1;
+  inset: calc(-1 * #{t.space(3)});
+  border-radius: t.radius(xl);
+  background: t.alpha(secondary-container, 60%);
+  opacity: 0;
+  transform: scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity t.duration(medium) t.easing(standard),
+    transform t.duration(long) t.easing(expressive);
+}
+
+.home-frame-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.home-frame-label {
+  @include t.type(label-medium);
+
+  position: absolute;
+  top: 0;
+  left: t.space(4);
+  padding: t.space(1) t.space(3);
+  border-radius: t.radius(full);
+  background: t.color(secondary-container);
+  color: t.color(on-secondary-container);
+  transform: translateY(-50%);
+}
+
+// ---- 字母视图（资源库按首字母分组）--------------------------------------------
+// 每个字母至少一行：左侧一列为字母，其余列排列图标，放不下换行。
+// 字母列与图标列同宽，整体与网格 / 顶栏对齐。分组容器不设定位，
+// 图标的 offsetParent 仍是 .grid，重排动画（FLIP）可在两种布局间衔接。
+
+.grouped {
+  display: flex;
+  flex-direction: column;
+  gap: t.space(3);
+}
+
+// 每个字母一张卡片；左右向外延伸 space(3)（同主屏框），内容仍与网格 / 顶栏对齐
+.group {
+  display: flex;
+  gap: t.space(2);
+  margin: 0 calc(-1 * #{t.space(3)});
+  padding: t.space(1) t.space(3);
+  border-radius: t.radius(xl);
+  background: t.alpha(surface-container-highest, 55%);
+  animation: group-in t.duration(long) t.easing(standard) both;
+}
+
+.group-letter {
+  @include t.flex-center;
+  @include t.type(headline-small);
+
+  flex-shrink: 0;
+  width: t.layout(tile-width);
+
+  // 与图标（上下内边距 + 图标尺寸）垂直居中对齐
+  height: calc(#{t.layout(icon-size)} + 2 * #{t.space(2)});
+  color: t.color(primary);
+  animation: letter-in t.duration(long) t.easing(standard) both;
+}
+
+.group-tiles {
+  display: grid;
+  grid-template-columns: repeat(var(--group-cols), t.layout(tile-width));
+  gap: t.space(4) t.space(2);
+}
+
+@keyframes group-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes letter-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+}
+

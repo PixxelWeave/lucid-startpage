@@ -1,0 +1,357 @@
+// =============================================================================
+// 设计 Token —— 全站样式的唯一来源（Material 3 / Pixel 风格）
+// - 此文件已通过 vite.config.ts 自动注入每个 SCSS 文件，命名空间为 `t`。
+// - 组件样式只能通过下列函数 / mixin 取值，不要写字面量：
+//     t.color(primary)   t.radius(lg)   t.space(4)   @include t.type(body-large)
+//     t.elevation(2)     t.duration(medium)          t.easing(emphasized-decelerate)
+//     t.blur(md)
+// - 使用不存在的 token 会在编译期报错；字面量颜色、圆角、字号、间距会被 stylelint 拦截。
+// - 新增 token：在下面的 map 里加一项即可，global.scss 会自动生成对应的 CSS 变量。
+// =============================================================================
+
+@use 'sass:map';
+@use 'sass:list';
+
+// ---- Color（M3 color roles）-------------------------------------------------
+
+$colors-light: (
+  primary: #415f91,
+  on-primary: #fff,
+  primary-container: #d6e3ff,
+  on-primary-container: #284777,
+  secondary-container: #dae2f9,
+  on-secondary-container: #3e4759,
+  tertiary-container: #fad8fd,
+  on-tertiary-container: #573e5c,
+  error: #ba1a1a,
+  on-error: #fff,
+  error-container: #ffdad6,
+  on-error-container: #93000a,
+  surface: #f9f9ff,
+  on-surface: #191c20,
+  on-surface-variant: #44474e,
+  surface-container-lowest: #fff,
+  surface-container-low: #f3f3fa,
+  surface-container: #ededf4,
+  surface-container-high: #e7e8ee,
+  surface-container-highest: #e2e2e9,
+  outline: #74777f,
+  outline-variant: #c4c6d0,
+  inverse-surface: #2e3036,
+  inverse-on-surface: #f0f0f7,
+  inverse-primary: #aac7ff,
+  shadow: #000,
+  scrim: #000,
+  // 导航图标底板：两种主题下都是白色
+  tile: #fff,
+  on-tile: #415f91,
+);
+
+$colors-dark: (
+  primary: #aac7ff,
+  on-primary: #0a305f,
+  primary-container: #284777,
+  on-primary-container: #d6e3ff,
+  secondary-container: #3e4759,
+  on-secondary-container: #dae2f9,
+  tertiary-container: #573e5c,
+  on-tertiary-container: #fad8fd,
+  error: #ffb4ab,
+  on-error: #690005,
+  error-container: #93000a,
+  on-error-container: #ffdad6,
+  surface: #111318,
+  on-surface: #e2e2e9,
+  on-surface-variant: #c4c6d0,
+  surface-container-lowest: #0c0e13,
+  surface-container-low: #191c20,
+  surface-container: #1d2024,
+  surface-container-high: #282a2f,
+  surface-container-highest: #33353a,
+  outline: #8e9099,
+  outline-variant: #44474e,
+  inverse-surface: #e2e2e9,
+  inverse-on-surface: #2e3036,
+  inverse-primary: #415f91,
+  shadow: #000,
+  scrim: #000,
+  tile: #fff,
+  on-tile: #415f91,
+);
+
+// ---- Shape（M3 corner scale）------------------------------------------------
+
+$radius: (
+  none: 0,
+  xs: 4px,
+  sm: 8px,
+  md: 12px,
+  lg: 16px,
+  xl: 28px,
+  full: 9999px,
+);
+
+// ---- Spacing（4px 栅格）----------------------------------------------------
+
+$space: (
+  0: 0,
+  1: 4px,
+  2: 8px,
+  3: 12px,
+  4: 16px,
+  5: 20px,
+  6: 24px,
+  8: 32px,
+  10: 40px,
+  12: 48px,
+  16: 64px,
+);
+
+// ---- Typography -----------------------------------------------------------
+
+$font-family: (
+  brand: ('Google Sans', 'Google Sans Text', 'Product Sans', roboto, system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif),
+  plain: ('Google Sans Text', roboto, system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif),
+  // 时钟可选字体。圆体随扩展打包（Nunito，main.tsx 引入），其余使用系统字体
+  rounded: ('Nunito Variable', 'PingFang SC', 'Microsoft YaHei', sans-serif),
+  serif: (ui-serif, 'New York', 'Iowan Old Style', georgia, 'Songti SC', 'Noto Serif SC', serif),
+  mono: (ui-monospace, 'SF Mono', 'JetBrains Mono', menlo, consolas, monospace),
+);
+
+// 字重（时钟可选），一般文字请用 t.type(...)
+$font-weight: (
+  light: 200,
+  regular: 400,
+  bold: 600,
+);
+
+// size / line-height / weight / tracking / family
+$type: (
+  display-hero: (clamp(64px, 9vw, 96px), 1, 400, -0.02em, brand),
+  display-large: (57px, 64px, 400, -0.25px, brand),
+  headline-small: (24px, 32px, 400, 0, brand),
+  title-large: (22px, 28px, 400, 0, brand),
+  title-medium: (16px, 24px, 500, 0.15px, plain),
+  body-large: (16px, 24px, 400, 0.5px, plain),
+  body-medium: (14px, 20px, 400, 0.25px, plain),
+  label-large: (14px, 20px, 500, 0.1px, plain),
+  label-medium: (12px, 16px, 500, 0.5px, plain),
+);
+
+// ---- Elevation（M3 扁平风格：默认无阴影，仅拖拽 / 浮层使用）-----------------
+
+$elevation: (
+  0: none,
+  1: (0 1px 2px 0 rgb(0 0 0 / 30%), 0 1px 3px 1px rgb(0 0 0 / 15%)),
+  2: (0 1px 2px 0 rgb(0 0 0 / 30%), 0 2px 6px 2px rgb(0 0 0 / 15%)),
+  3: (0 4px 8px 3px rgb(0 0 0 / 15%), 0 1px 3px 0 rgb(0 0 0 / 30%)),
+);
+
+// ---- Layout（导航网格尺寸，网格 / 图标 / 资源库顶栏共用）-------------------
+
+// 列数由设置决定（homeColumns，受窗口宽度限制），运行时写入 CSS 变量 --grid-cols
+$layout: (
+  // 图标格宽度（含名称）与其中图标的尺寸
+  tile-width: 96px,
+  icon-size: 64px,
+);
+
+// ---- Blur（背景模糊，用于浮层 / 展开面板）---------------------------------
+
+$blur: (
+  sm: 8px,
+  md: 24px,
+  lg: 48px,
+);
+
+// ---- Motion ---------------------------------------------------------------
+
+$duration: (
+  short: 150ms,
+  medium: 250ms,
+  long: 400ms,
+  // 大面积的场景切换（首页 ⇄ 展开）
+  extra-long: 600ms,
+);
+
+$easing: (
+  standard: cubic-bezier(0.2, 0, 0, 1),
+  emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1),
+  emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15),
+  // iOS 式弹出层曲线：起步柔和、落位平滑，用于大面积位移
+  expressive: cubic-bezier(0.32, 0.72, 0, 1),
+);
+
+// ---- State layer（M3 交互态不透明度）---------------------------------------
+
+$state: (
+  hover: 8%,
+  focus: 10%,
+  pressed: 10%,
+  dragged: 16%,
+);
+
+// =============================================================================
+// Accessors
+// =============================================================================
+
+/// 校验 token 是否存在，不存在时编译报错；返回 key 本身。
+@function assert-token($map, $key, $kind) {
+  @if not map.has-key($map, $key) {
+    @error 'Unknown #{$kind} token `#{$key}`. Available: #{map.keys($map)}';
+  }
+
+  @return $key;
+}
+
+@function color($name) {
+  @return var(--color-#{assert-token($colors-light, $name, 'color')});
+}
+
+@function radius($name) {
+  @return var(--radius-#{assert-token($radius, $name, 'radius')});
+}
+
+@function space($step) {
+  @return var(--space-#{assert-token($space, $step, 'space')});
+}
+
+@function elevation($level) {
+  @return var(--elevation-#{assert-token($elevation, $level, 'elevation')});
+}
+
+@function layout($name) {
+  @return var(--layout-#{assert-token($layout, $name, 'layout')});
+}
+
+@function blur($name) {
+  @return var(--blur-#{assert-token($blur, $name, 'blur')});
+}
+
+@function duration($name) {
+  @return var(--duration-#{assert-token($duration, $name, 'duration')});
+}
+
+@function easing($name) {
+  @return var(--easing-#{assert-token($easing, $name, 'easing')});
+}
+
+@function state($name) {
+  @return map.get($state, assert-token($state, $name, 'state'));
+}
+
+/// 半透明的 token 颜色，例如 scrim 遮罩、state layer。
+@function alpha($name, $amount) {
+  @return color-mix(in srgb, color($name) $amount, transparent);
+}
+
+/// 单独指定字体族 / 字重（仅用于用户可选的字体，如时钟）；一般文字请用 type()
+@mixin font-family($name) {
+  $name: assert-token($font-family, $name, 'font-family');
+
+  font-family: var(--font-#{$name});
+}
+
+@mixin font-weight($name) {
+  $name: assert-token($font-weight, $name, 'font-weight');
+
+  font-weight: var(--font-weight-#{$name});
+}
+
+@mixin type($role) {
+  $role: assert-token($type, $role, 'type');
+
+  font-family: var(--type-#{$role}-family);
+  font-size: var(--type-#{$role}-size);
+  font-weight: var(--type-#{$role}-weight);
+  line-height: var(--type-#{$role}-line);
+  letter-spacing: var(--type-#{$role}-tracking);
+}
+
+/// M3 state layer：在元素上叠加 hover / focus / pressed 半透明层。
+/// $color 为内容色（通常是 on-xxx）。元素需要 position 非 static。
+@mixin state-layer($color: on-surface) {
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: color($color);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity duration(short) easing(standard);
+  }
+
+  &:hover::after {
+    opacity: state(hover);
+  }
+
+  &:focus-visible::after {
+    opacity: state(focus);
+  }
+
+  &:active::after {
+    opacity: state(pressed);
+  }
+}
+
+/// 导航网格的列数（运行时由 App 写入 --grid-cols）
+@function grid-cols() {
+  @return var(--grid-cols, 8);
+}
+
+/// 与导航网格同宽：grid-cols() 列 × 列宽 layout(tile-width)，列间距 space(2)。
+@mixin nav-grid-width {
+  width: calc(#{grid-cols()} * #{layout(tile-width)} + (#{grid-cols()} - 1) * #{space(2)});
+}
+
+@mixin focus-ring {
+  &:focus-visible {
+    outline: 2px solid color(primary);
+    outline-offset: 2px;
+  }
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// =============================================================================
+// CSS 变量输出（仅供 global.scss 调用）
+// =============================================================================
+
+@mixin emit-vars($prefix, $map) {
+  @each $key, $value in $map {
+    --#{$prefix}-#{$key}: #{$value};
+  }
+}
+
+@mixin emit-color-vars($scheme) {
+  @if $scheme == dark {
+    @include emit-vars(color, $colors-dark);
+  } @else {
+    @include emit-vars(color, $colors-light);
+  }
+}
+
+@mixin emit-static-vars {
+  @include emit-vars(radius, $radius);
+  @include emit-vars(space, $space);
+  @include emit-vars(elevation, $elevation);
+  @include emit-vars(blur, $blur);
+  @include emit-vars(layout, $layout);
+  @include emit-vars(font, $font-family);
+  @include emit-vars(font-weight, $font-weight);
+  @include emit-vars(duration, $duration);
+  @include emit-vars(easing, $easing);
+
+  @each $role, $spec in $type {
+    --type-#{$role}-size: #{list.nth($spec, 1)};
+    --type-#{$role}-line: #{list.nth($spec, 2)};
+    --type-#{$role}-weight: #{list.nth($spec, 3)};
+    --type-#{$role}-tracking: #{list.nth($spec, 4)};
+    --type-#{$role}-family: #{map.get($font-family, list.nth($spec, 5))};
+  }
+}

@@ -1,0 +1,65 @@
+// M3 slider：已选段 primary，未选段 secondary-container，圆形手柄
+
+.slider {
+  display: inline-flex;
+  gap: t.space(3);
+  align-items: center;
+  min-width: 0;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.38;
+  }
+
+  // 轨道与手柄同高，4px 色条画在中央，手柄无需偏移即可居中
+  &::-webkit-slider-runnable-track {
+    height: 20px;
+    background: linear-gradient(
+        to right,
+        t.color(primary) var(--percent),
+        t.color(secondary-container) var(--percent)
+      )
+      center / 100% 4px no-repeat;
+  }
+
+  &::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: t.radius(full);
+    background: t.color(primary);
+    transition: transform t.duration(short) t.easing(standard);
+    appearance: none;
+  }
+
+  &:active:not(:disabled)::-webkit-slider-thumb {
+    transform: scale(1.15);
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid t.color(primary);
+    outline-offset: 2px;
+  }
+}
+
+.value {
+  @include t.type(label-large);
+
+  min-width: 3em;
+  color: t.color(on-surface-variant);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,96 @@
+// 收起：40px 圆形 tonal 按钮；展开：宽度过渡到搜索框
+$size: 40px;
+$open-width: 280px;
+
+.root {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 1;
+  align-items: center;
+  overflow: hidden;
+  width: $size;
+  min-width: $size;
+  height: $size;
+  border-radius: t.radius(full);
+  background: t.color(secondary-container);
+  color: t.color(on-secondary-container);
+  transition: width t.duration(long) t.easing(expressive);
+
+  &:has(.input:focus-visible) {
+    outline: 2px solid t.color(primary);
+    outline-offset: 2px;
+  }
+}
+
+.open {
+  width: min(#{$open-width}, 100%);
+}
+
+.toggle {
+  @include t.flex-center;
+  @include t.state-layer(on-secondary-container);
+  @include t.focus-ring;
+
+  position: relative;
+  flex-shrink: 0;
+  width: $size;
+  height: $size;
+  padding: 0;
+  border: none;
+  border-radius: t.radius(full);
+  background: transparent;
+  color: inherit;
+
+  .open & {
+    cursor: text;
+
+    &::after {
+      display: none;
+    }
+  }
+}
+
+.input {
+  @include t.type(body-medium);
+
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 t.space(4) 0 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: t.color(on-surface);
+  opacity: 0;
+  transition: opacity t.duration(short) t.easing(standard);
+
+  &::placeholder {
+    color: t.color(on-surface-variant);
+  }
+
+  &::-webkit-search-cancel-button {
+    appearance: none;
+  }
+
+  .open & {
+    opacity: 1;
+    transition: opacity t.duration(medium) t.easing(standard) t.duration(short);
+  }
+}
+
+.clear {
+  @include t.flex-center;
+  @include t.state-layer(on-surface-variant);
+  @include t.focus-ring;
+
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin-right: t.space(1);
+  padding: 0;
+  border: none;
+  border-radius: t.radius(full);
+  background: transparent;
+  color: t.color(on-surface-variant);
+}
