@@ -8,7 +8,6 @@
 - `pnpm build` —— 类型检查 + 构建；`dist/` 即为可加载的扩展目录（manifest 由 vite.config.ts 插件生成；扩展图标的唯一源文件是 `public/icon.svg`，构建时用 resvg 栅格化为 16 / 32 / 48 / 128 PNG，页面 favicon 直接用 SVG）
 - `pnpm zip` —— 构建并打包为 `startpage-extension.zip`
 - `pnpm build:web` —— 网页版（`--mode web`）输出到 `dist-web/`：不生成扩展 manifest，改为 Web App manifest、iOS 主屏幕图标（满版，由 `fullBleedIcon()` 从同一个 SVG 派生）与 theme-color。两版共用同一份代码，运行时用 `lib/env.ts` 的 `isExtension` 区分
-- `pnpm deploy:web [preview]` —— 构建网页版并用 wrangler 直接上传到 Cloudflare Pages（`scripts/deploy-web.sh`），凭证读 `.env.deploy.local`（不提交）
 - GitHub Pages：推送到 main 时由 `.github/workflows/deploy-pages.yml` 构建网页版并发布（`BASE_PATH=/仓库名/`，网页版支持部署在子路径下；index.html 里的 `/xxx` 由 vite 自动加前缀，插件注入的链接与 manifest 也已按 base 处理，新增根路径引用时注意）
 - `pnpm lint` —— oxlint + stylelint，提交前必须通过
 - `pnpm icons:sync` —— 从 iTab 图标库重新抓取图标索引（域名、名称、图案路径、底色），生成 `src/features/nav/icon-library.json`（已提交，不必每次运行）

@@ -25,6 +25,7 @@ import type { NavItemsApi } from '@/features/nav/useNavItems'
 import { isExtension } from '@/lib/env'
 import { cx } from '@/lib/cx'
 import { COMPACT_QUERY, useMediaQuery } from '@/lib/useMediaQuery'
+import { viewportDiagnostics } from '@/lib/viewportGap'
 import { downloadBackup, parseBackup } from './backup'
 import { useSettings } from './SettingsContext'
 import {
@@ -114,6 +115,8 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
   const [processingImage, setProcessingImage] = useState(false)
   const background = useBackgroundImage(settings.backgroundImage)
   const hasBackground = background.status === 'ready'
+  /** 关于 → 诊断信息：点击时读取，排查手机布局问题用 */
+  const [diagnostics, setDiagnostics] = useState<Record<string, string> | null>(null)
   /** 日期格式示例用（打开设置时的日期即可） */
   const [today] = useState(() => new Date())
 
@@ -536,9 +539,23 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
           <ListItem title="数据存储" trailing={isExtension ? '扩展本地存储' : '浏览器本地存储'} />
         </Card>
         <Card>
-          <ListItem title="长按图标" description="进入编辑模式，拖动即可调整顺序" />
+          <ListItem
+            title="长按图标"
+            description="电脑上进入编辑模式，拖动即可调整顺序；手机上弹出菜单，按住继续移动即可拖动排序"
+          />
+          <ListItem title="右键点击图标" description="编辑、分享、编辑主屏幕或删除" />
           <ListItem title="编辑模式下点击图标" description="修改名称、网址和图标" />
           <ListItem title="退出编辑模式" description="点击“完成”、按 Esc 或点击空白处" />
+        </Card>
+        <Card>
+          <ListItem
+            title="诊断信息"
+            description="屏幕、视口与安全区的实际数值，排查手机上的布局问题时使用"
+            trailing={diagnostics ? undefined : <Icon name="chevron-right" />}
+            onClick={() => setDiagnostics(viewportDiagnostics())}
+          />
+          {diagnostics &&
+            Object.entries(diagnostics).map(([key, value]) => <ListItem key={key} title={key} trailing={value} />)}
         </Card>
       </>
     ),
