@@ -82,6 +82,16 @@ html {
   height: calc(100% + #{t.viewport-gap()} + 2 * #{t.browser-bars()});
 }
 
+// 隐藏页面自身的滚动条：页面不让用户滚动，但手机 Safari 中会被程序滚动到撑高部分的中间
+// （见 lib/viewportGap.ts），iOS 会因此短暂显示滚动指示条。内部滚动区域（资源库、设置）不受影响
+html {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 body {
   @include t.type(body-medium);
 
