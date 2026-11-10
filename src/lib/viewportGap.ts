@@ -28,9 +28,17 @@ function screenHeight(): number {
 export function watchViewportGap() {
   if (!isStandalone()) return
 
+  // 每个方向各记一个缺口，只增不减：补齐之后系统报告的视口高度会随之变化（变得与屏幕一样高），
+  // 若按新值重算会得出 0、撤掉补齐、视口又变短……来回跳动，背景随之上下抽搐
+  const gaps = { portrait: 0, landscape: 0 }
+  let applied = -1
   const update = () => {
-    const gap = Math.max(0, screenHeight() - window.innerHeight)
-    document.documentElement.style.setProperty('--viewport-gap', `${gap}px`)
+    const orientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait'
+    const measured = Math.max(0, screenHeight() - window.innerHeight)
+    gaps[orientation] = Math.max(gaps[orientation], measured)
+    if (gaps[orientation] === applied) return
+    applied = gaps[orientation]
+    document.documentElement.style.setProperty('--viewport-gap', `${applied}px`)
   }
   update()
   // 系统可能在启动后才把视口缩短，且不一定派发 resize：在启动后的几个时间点再测
@@ -38,8 +46,8 @@ export function watchViewportGap() {
   window.addEventListener('load', update)
   window.addEventListener('pageshow', update)
   for (const ms of [300, 1000, 3000]) window.setTimeout(update, ms)
+  // 横竖屏切换
   window.addEventListener('resize', update)
-  window.visualViewport?.addEventListener('resize', update)
 }
 
 /** 视口诊断数据（设置 → 关于），用于排查 iOS 主屏幕模式下的布局问题 */
