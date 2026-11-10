@@ -1,0 +1,55 @@
+# 网页版部署到 GitHub Pages：推送到 main（或在 Actions 页面手动运行）时构建 dist-web 并发布。
+# 首次使用：仓库 Settings → Pages → Build and deployment → Source 选择 “GitHub Actions”。
+name: Deploy web to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只部署一次；新的推送会取消尚未完成的部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm 版本取自 package.json 的 packageManager
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # 项目页面部署在 /仓库名/ 下；仓库名为 <用户名>.github.io 时部署在根路径
+      - name: Build
+        run: |
+          repo="${{ github.event.repository.name }}"
+          if [[ "$repo" == *.github.io ]]; then base="/"; else base="/$repo/"; fi
+          BASE_PATH="$base" pnpm build:web
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

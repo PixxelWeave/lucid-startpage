@@ -85,7 +85,9 @@ function webAppFiles(): Map<string, { type: string; body: string | Uint8Array }>
     name: APP_NAME,
     short_name: APP_NAME,
     description: APP_DESCRIPTION,
-    start_url: '/',
+    // 相对于 manifest 所在目录：部署在子路径（如 GitHub Pages 的 /仓库名/）下同样正确
+    start_url: './',
+    scope: './',
     display: 'standalone',
     background_color: SURFACE.light,
     theme_color: SURFACE.light,
@@ -109,9 +111,14 @@ function webAppFiles(): Map<string, { type: string; body: string | Uint8Array }>
 function webApp(): Plugin {
   let files: ReturnType<typeof webAppFiles> | undefined
   const getFiles = () => (files ??= webAppFiles())
+  // 部署路径前缀（vite 的 base），注入的链接要带上；index.html 里写的 /xxx 由 vite 自动加前缀
+  let base = '/'
 
   return {
     name: 'lucid:web-app',
+    configResolved(config) {
+      base = config.base
+    },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const file = getFiles().get((req.url ?? '').split('?')[0].replace(/^\//, ''))
@@ -132,8 +139,8 @@ function webApp(): Plugin {
         injectTo: 'head' as const,
       })
       return [
-        { tag: 'link', attrs: { rel: 'manifest', href: '/manifest.webmanifest' }, injectTo: 'head' },
-        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' }, injectTo: 'head' },
+        { tag: 'link', attrs: { rel: 'manifest', href: `${base}manifest.webmanifest` }, injectTo: 'head' },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: `${base}apple-touch-icon.png` }, injectTo: 'head' },
         meta('apple-mobile-web-app-capable', 'yes'),
         meta('apple-mobile-web-app-title', APP_NAME),
         // 主屏幕模式下状态栏透明，页面（背景图）铺到状态栏下方；内容用 safe-area 避让。
@@ -150,7 +157,8 @@ function webApp(): Plugin {
 
 // 两种构建：
 // - 扩展版 `pnpm build`        → dist/（Chrome 加载的目录，路径不要改）
-// - 网页版 `pnpm build:web`    → dist-web/（--mode web，部署到 Cloudflare Pages）
+// - 网页版 `pnpm build:web`    → dist-web/（--mode web）。部署在子路径下时用 BASE_PATH 指定前缀，
+//   如 GitHub Pages：BASE_PATH=/仓库名/ pnpm build:web（见 .github/workflows/deploy-pages.yml）
 // - 开发预览 `pnpm dev`         → 按网页版提供主屏幕图标等文件
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -158,6 +166,8 @@ export default defineConfig(({ command, mode }) => {
   // 开发服务器按网页版处理（手机上预览）；只有构建扩展版时生成扩展 manifest
   const extension = command === 'build' && !web
   return {
+    // 部署路径前缀：只用于网页版（扩展与开发服务器都在根路径）
+    base: web ? (process.env.BASE_PATH ?? '/') : '/',
     plugins: [react(), extension ? chromeExtension() : webApp()],
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
