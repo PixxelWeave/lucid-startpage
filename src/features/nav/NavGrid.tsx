@@ -11,6 +11,7 @@ import {
 import { createPortal } from 'react-dom'
 import {
   closestCenter,
+  defaultDropAnimationSideEffects,
   DndContext,
   DragOverlay,
   KeyboardSensor,
@@ -20,16 +21,21 @@ import {
   useSensors,
   type CollisionDetection,
   type DragEndEvent,
+  type DragMoveEvent,
   type DragStartEvent,
+  type DropAnimation,
 } from '@dnd-kit/core'
 import { rectSortingStrategy, SortableContext, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { Button, Icon, Menu, Modal, Snackbar, type MenuItem } from '@/components/ui'
+import { CSS as DndCSS } from '@dnd-kit/utilities'
+import { Button, Icon, Menu, Modal, Snackbar, type MenuAnchor, type MenuItem } from '@/components/ui'
 import { useSettings } from '@/features/settings/SettingsContext'
 import { cx } from '@/lib/cx'
 import { groupByInitial } from '@/lib/initial'
 import { shareLink } from '@/lib/share'
+import { swallowNextClick } from '@/lib/swallowClick'
 import { hostnameOf } from '@/lib/url'
 import { filterNavItems } from './filter'
+import { LONG_PRESS, LONG_PRESS_TOLERANCE, PRESS_DRAG_DISTANCE } from './gestures'
 import { NavItemDialog } from './NavItemDialog'
 import { NavTile, SortableNavTile, type ChaseState } from './NavTile'
 import { sortTransition } from './sortTransition'
@@ -37,8 +43,36 @@ import type { NavItem } from './types'
 import type { NavItemsApi } from './useNavItems'
 import styles from './NavGrid.module.scss'
 
-/** 长按多久进入编辑模式（ms） */
-const LONG_PRESS = 450
+/** 拖拽库默认的落位副作用：落位期间隐藏原位的图标 */
+const hideActiveWhileDropping = defaultDropAnimationSideEffects({ styles: { active: { opacity: '0' } } })
+
+let dropAnimation: DropAnimation | null = null
+
+/**
+ * 松手落位：位移与让位动画一致（sortTransition）；同时把浮起放大的图标缩回原尺寸，
+ * 否则落位结束时会从放大状态突然跳回（长按弹出菜单后原地松手也走这里）。
+ * 首次渲染时再创建：时长读自 CSS 变量，模块加载时样式可能尚未生效
+ */
+function getDropAnimation(): DropAnimation {
+  dropAnimation ??= {
+    ...sortTransition(),
+    // 拖拽库在首尾帧相同（长按后原地松手，位置没变）时会跳过落位动画，连同下面的缩回一起；
+    // 标上 offset 使首尾帧不同，保证总会播放
+    keyframes: ({ transform }) => [
+      { transform: DndCSS.Transform.toString(transform.initial), offset: 0 },
+      { transform: DndCSS.Transform.toString(transform.final), offset: 1 },
+    ],
+    sideEffects: (params) => {
+      const cleanup = hideActiveWhileDropping(params)
+      const { duration, easing: curve } = sortTransition()
+      params.dragOverlay.node
+        .querySelector('[data-tile-icon]')
+        ?.animate({ transform: 'scale(1)', boxShadow: 'none' }, { duration, easing: curve, fill: 'forwards' })
+      return cleanup
+    },
+  }
+  return dropAnimation
+}
 
 type DialogState = { mode: 'add' } | { mode: 'edit'; item: NavItem } | null
 
@@ -77,13 +111,28 @@ export function NavGrid({
   // 每次打开对话框换一个 key，让表单状态重新初始化
   const [dialogKey, setDialogKey] = useState(0)
   const [pendingDelete, setPendingDelete] = useState<NavItem | null>(null)
-  /** 右键菜单：目标导航与弹出位置；关闭时保留内容，供退场动画使用 */
-  const [menu, setMenu] = useState<{ item: NavItem; x: number; y: number; open: boolean } | null>(null)
+  /**
+   * 操作菜单：目标导航与弹出位置；关闭时保留内容，供退场动画使用。
+   * 右键：在指针处弹出；触屏长按：锚定在图标旁（anchor），不自动聚焦第一项（touch）
+   */
+  const [menu, setMenu] = useState<{
+    item: NavItem
+    x: number
+    y: number
+    anchor?: MenuAnchor
+    touch?: boolean
+    open: boolean
+  } | null>(null)
   const menuOpen = menu?.open ?? false
   const [toast, setToast] = useState<string | null>(null)
   const closeToast = useCallback(() => setToast(null), [])
   // 拖拽结束后浏览器仍会派发一次 click，需要吞掉
   const suppressClick = useRef(false)
+  /**
+   * 触屏长按（iOS 主屏幕）：拖拽库按长按激活后先弹出菜单、暂不进入编辑模式；
+   * 按住继续移动超过 PRESS_DRAG_DISTANCE 才收起菜单、进入编辑模式并拖动；原地松手只留下菜单
+   */
+  const pressMenu = useRef(false)
 
   const modalOpen = dialog !== null || pendingDelete !== null || menuOpen
 
@@ -93,7 +142,10 @@ export function NavGrid({
     [editing],
   )
   const touchConstraint = useMemo(
-    () => (editing ? { delay: 100, tolerance: 6 } : { delay: LONG_PRESS, tolerance: 6 }),
+    () =>
+      editing
+        ? { delay: 100, tolerance: LONG_PRESS_TOLERANCE }
+        : { delay: LONG_PRESS, tolerance: LONG_PRESS_TOLERANCE },
     [editing],
   )
   const sensors = useSensors(
@@ -120,24 +172,28 @@ export function NavGrid({
         return
       }
       const target = e.target as Element
+      // 被这次点击自身移除的元素（如菜单里的“编辑主屏幕”，进入编辑模式后不再显示）不算点击空白处
+      if (!target.isConnected) return
       if (modalOpen || target.closest('[data-tile], [data-keep-editing], dialog, [popover]')) return
       setEditing(false)
     }
 
-    // 新的一次按下开始时，清掉上一次拖拽遗留的标记
-    const onPointerDown = () => {
-      suppressClick.current = false
-    }
-
     window.addEventListener('keydown', onKeyDown)
-    document.addEventListener('pointerdown', onPointerDown, true)
     document.addEventListener('click', onClick)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
-      document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('click', onClick)
     }
   }, [editing, activeId, modalOpen, setEditing])
+
+  // 新的一次按下开始时，清掉上一次拖拽遗留的标记（触屏拖拽结束后不一定会派发 click）
+  useEffect(() => {
+    const onPointerDown = () => {
+      suppressClick.current = false
+    }
+    document.addEventListener('pointerdown', onPointerDown, true)
+    return () => document.removeEventListener('pointerdown', onPointerDown, true)
+  }, [])
 
   // ---- 位置变化动画（FLIP）：删除后补位、按首字母排序 / 还原 ----
   // dnd-kit 只在拖拽过程中测量位置，这些变化需要自己做动画：每次提交后记下各图标在网格中的位置
@@ -221,15 +277,48 @@ export function NavGrid({
     setDialog(state)
   }
 
-  const handleDragStart = ({ active }: DragStartEvent) => {
-    setActiveId(String(active.id))
+  /** 触屏长按：在图标旁弹出菜单 */
+  const openPressMenu = (item: NavItem, anchor: MenuAnchor) => {
+    setMenu({ item, x: anchor.left, y: anchor.bottom, anchor, touch: true, open: true })
+  }
+
+  const handleDragStart = ({ active, activatorEvent }: DragStartEvent) => {
+    const id = String(active.id)
+    setActiveId(id)
+    const touch = typeof TouchEvent !== 'undefined' && activatorEvent instanceof TouchEvent
+    const item = items.find((it) => it.id === id)
+    // 菜单锚定在图标本身（不含名称与格子留白）；拖拽开始时拖拽库尚未测量位置，直接取元素位置
+    const rect = gridRef.current
+      ?.querySelector(`[data-nav-id="${CSS.escape(id)}"] [data-tile-icon]`)
+      ?.getBoundingClientRect()
+    if (touch && !editing && item && rect) {
+      pressMenu.current = true
+      openPressMenu(item, rect)
+      return
+    }
     setEditing(true)
   }
 
+  const handleDragMove = ({ delta }: DragMoveEvent) => {
+    // 长按弹出菜单后继续移动：收起菜单，进入编辑模式并拖动
+    if (pressMenu.current && Math.hypot(delta.x, delta.y) > PRESS_DRAG_DISTANCE) {
+      pressMenu.current = false
+      setMenu((m) => (m ? { ...m, open: false } : m))
+      setEditing(true)
+    }
+  }
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (over && active.id !== over.id) move(String(active.id), String(over.id))
     setActiveId(null)
     suppressClick.current = true
+    // 松手后浏览器补发的 click 会打开图标链接（拖拽库只阻止了传递，没有阻止默认行为）
+    swallowNextClick()
+    // 长按后原地松手：不算拖动，只留下菜单
+    if (pressMenu.current) {
+      pressMenu.current = false
+      return
+    }
+    if (over && active.id !== over.id) move(String(active.id), String(over.id))
   }
 
   const handleLinkClick = (e: MouseEvent<HTMLAnchorElement>, item: NavItem) => {
@@ -275,6 +364,8 @@ export function NavGrid({
       onRemove={setPendingDelete}
       chase={index === undefined ? undefined : chaseOf(index)}
       onHome={!expanded}
+      // 拖拽禁用时（搜索 / 字母视图）由图标自己处理触屏长按
+      onLongPress={reordered ? openPressMenu : undefined}
     />
   )
 
@@ -282,6 +373,10 @@ export function NavGrid({
     ? [
         { key: 'edit', label: '编辑', icon: 'edit', onSelect: () => openDialog({ mode: 'edit', item: menu.item }) },
         { key: 'share', label: '分享', icon: 'share', onSelect: () => void handleShare(menu.item) },
+        // 触屏上长按不再直接进入编辑模式，由这一项进入（iOS 主屏幕的“编辑主屏幕”）
+        ...(editing
+          ? []
+          : [{ key: 'arrange', label: '编辑主屏幕', icon: 'apps' as const, onSelect: () => setEditing(true) }]),
         {
           key: 'delete',
           label: '删除',
@@ -298,8 +393,6 @@ export function NavGrid({
       <div
         ref={gridRef}
         className={cx(styles.grid, homeFrameVisible && styles.gridFramed, groups && styles.grouped)}
-        // 字母视图：字母占左侧一列，图标排在其余列
-        style={{ '--group-cols': Math.max(1, columns - 1) } as CSSProperties}
       >
         {showHomeFrame && (
           <div
@@ -314,10 +407,13 @@ export function NavGrid({
           sensors={sensors}
           collisionDetection={collisionDetection}
           onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
           onDragEnd={handleDragEnd}
           onDragCancel={() => {
+            pressMenu.current = false
             setActiveId(null)
             suppressClick.current = true
+            swallowNextClick()
           }}
         >
           <SortableContext
@@ -329,8 +425,8 @@ export function NavGrid({
             {groups
               ? groups.map((group) => (
                   <section key={group.letter} className={styles.group} aria-label={group.letter}>
-                    <div className={styles.groupLetter} aria-hidden="true">
-                      {group.letter}
+                    <div className={styles.groupHeader} aria-hidden="true">
+                      <span className={styles.groupLetter}>{group.letter}</span>
                     </div>
                     <div className={styles.groupTiles}>{group.items.map((item) => renderTile(item))}</div>
                   </section>
@@ -341,7 +437,7 @@ export function NavGrid({
           {/* 渲染到 body：图标区有 transform，会让 fixed 定位的浮层错位 */}
           {createPortal(
             // 松手落位动画与让位动画一致
-            <DragOverlay dropAnimation={sortTransition()}>
+            <DragOverlay dropAnimation={getDropAnimation()}>
               {activeItem && <NavTile item={activeItem} editing state="lifted" />}
             </DragOverlay>,
             document.body,
@@ -374,6 +470,8 @@ export function NavGrid({
         open={menuOpen}
         x={menu?.x ?? 0}
         y={menu?.y ?? 0}
+        anchor={menu?.anchor}
+        focusFirst={!menu?.touch}
         label="导航操作"
         title={menu?.item.name}
         subtitle={menu ? hostnameOf(menu.item.url) : undefined}

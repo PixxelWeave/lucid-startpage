@@ -1,3 +1,4 @@
+import { createId } from '@/lib/id'
 import { useCallback } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import { useStoredState } from '@/lib/useStoredState'
@@ -13,7 +14,7 @@ const DEFAULT_ITEMS: Omit<NavItem, 'id'>[] = [
   { name: 'Bilibili', url: 'https://www.bilibili.com/', icon: iconPresets.library('icons/bilibili2.svg', '#ff5ca1') },
 ]
 
-const withId = (item: Omit<NavItem, 'id'>): NavItem => ({ ...item, id: crypto.randomUUID() })
+const withId = (item: Omit<NavItem, 'id'>): NavItem => ({ ...item, id: createId() })
 const defaultItems = () => DEFAULT_ITEMS.map(withId)
 
 export function useNavItems() {

@@ -165,6 +165,9 @@ $blur: (
 );
 
 // ---- Motion ---------------------------------------------------------------
+// - 浮层（对话框 / sheet / 菜单 / 提示条）收起与出现“原路返回”：同样的时长，曲线换成对应的加速版，
+//   淡出延后，使整个过程正好倒放（见 Modal / Menu / Snackbar 与 lib/exitTransition.ts）
+// - 依次出现的元素用 stagger(delay) 起始、stagger(step) 逐个错开
 
 $duration: (
   short: 150ms,
@@ -180,6 +183,14 @@ $easing: (
   emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15),
   // iOS 式弹出层曲线：起步柔和、落位平滑，用于大面积位移
   expressive: cubic-bezier(0.32, 0.72, 0, 1),
+  // 轻微回弹：小面积元素的弹出（如长按菜单），越过终点一点再落回
+  spring: cubic-bezier(0.34, 1.4, 0.64, 1),
+);
+
+// 依次出现：整体起始延迟与逐个错开的间隔（菜单项、资源库“追赶”的逐行错开）
+$stagger: (
+  delay: 60ms,
+  step: 30ms,
 );
 
 // ---- State layer（M3 交互态不透明度）---------------------------------------
@@ -232,12 +243,35 @@ $state: (
   @return var(--duration-#{assert-token($duration, $name, 'duration')});
 }
 
+@function stagger($name) {
+  @return var(--stagger-#{assert-token($stagger, $name, 'stagger')});
+}
+
 @function easing($name) {
   @return var(--easing-#{assert-token($easing, $name, 'easing')});
 }
 
 @function state($name) {
   @return map.get($state, assert-token($state, $name, 'state'));
+}
+
+/// 安全区内边距（刘海 / 状态栏 / 主屏指示条）。页面使用 viewport-fit=cover 铺满全屏，
+/// 贴边的元素需要自行加上对应方向的安全区，例如 top: calc(space(4) + safe-area(top))
+@function safe-area($edge) {
+  @if not list.index((top, right, bottom, left), $edge) {
+    @error 'Unknown safe-area edge `#{$edge}`. Available: top, right, bottom, left';
+  }
+
+  // 回退值必须带单位：要参与 calc() 中的长度运算
+  // stylelint-disable-next-line length-zero-no-unit
+  @return env(safe-area-inset-#{$edge}, 0px);
+}
+
+/// iOS 主屏幕模式下视口底部的缺口（见 src/lib/viewportGap.ts），其他情况为 0。
+/// 只用于文档高度（global.scss 的 html）。fixed 元素本来就按整个屏幕排布，不要再补，否则会伸出屏幕底边
+@function viewport-gap() {
+  // stylelint-disable-next-line length-zero-no-unit
+  @return var(--viewport-gap, 0px);
 }
 
 /// 半透明的 token 颜色，例如 scrim 遮罩、state layer。
@@ -282,8 +316,11 @@ $state: (
     transition: opacity duration(short) easing(standard);
   }
 
-  &:hover::after {
-    opacity: state(hover);
+  // 只在能悬停的设备上（鼠标）：触屏上 :hover 会在点击后“粘住”
+  @media (hover: hover) {
+    &:hover::after {
+      opacity: state(hover);
+    }
   }
 
   &:focus-visible::after {
@@ -301,6 +338,22 @@ $state: (
 }
 
 /// 与导航网格同宽：grid-cols() 列 × 列宽 layout(tile-width)，列间距 space(2)。
+// ---- 断点 ----------------------------------------------------------------
+// 紧凑布局（手机）：设置等大面板改为底部弹出的 sheet。
+// 与 src/lib/useMediaQuery.ts 的 COMPACT_QUERY 保持一致
+@mixin compact {
+  @media (width < 640px) {
+    @content;
+  }
+}
+
+// 触屏设备（无悬停、粗指针），与屏幕宽度无关：如手机、平板
+@mixin touch {
+  @media (hover: none) and (pointer: coarse) {
+    @content;
+  }
+}
+
 @mixin nav-grid-width {
   width: calc(#{grid-cols()} * #{layout(tile-width)} + (#{grid-cols()} - 1) * #{space(2)});
 }
@@ -346,6 +399,7 @@ $state: (
   @include emit-vars(font-weight, $font-weight);
   @include emit-vars(duration, $duration);
   @include emit-vars(easing, $easing);
+  @include emit-vars(stagger, $stagger);
 
   @each $role, $spec in $type {
     --type-#{$role}-size: #{list.nth($spec, 1)};

@@ -4,6 +4,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { Icon } from '@/components/ui'
 import { cx } from '@/lib/cx'
 import { durationMs, easing } from '@/lib/tokens'
+import { useLongPress } from '@/lib/useLongPress'
+import { LONG_PRESS, LONG_PRESS_TOLERANCE } from './gestures'
 import { sortTransition } from './sortTransition'
 import { TileIcon } from './TileIcon'
 import type { NavItem } from './types'
@@ -84,7 +86,8 @@ export function NavTile({
           role={undefined}
           title={editing ? undefined : item.url}
         >
-          <span className={styles.icon}>
+          {/* data-tile-icon：图标本身（不含名称与格子留白），长按菜单锚定在它旁边 */}
+          <span className={styles.icon} data-tile-icon>
             <TileIcon name={item.name} url={item.url} icon={item.icon} />
           </span>
           <span className={styles.label}>{item.name}</span>
@@ -114,6 +117,11 @@ interface SortableNavTileProps {
   chase?: ChaseState
   /** 当前处于主屏（非资源库）状态 */
   onHome: boolean
+  /**
+   * 触屏长按（拖拽排序禁用时，如搜索 / 字母视图）：弹出菜单。
+   * 拖拽可用时长按由 NavGrid 的拖拽开始事件处理，不传此项
+   */
+  onLongPress?: (item: NavItem, rect: DOMRect) => void
 }
 
 export function SortableNavTile({
@@ -125,6 +133,7 @@ export function SortableNavTile({
   onRemove,
   chase,
   onHome,
+  onLongPress,
 }: SortableNavTileProps) {
   const bodyRef = useRef<HTMLDivElement>(null)
 
@@ -142,6 +151,12 @@ export function SortableNavTile({
     id: item.id,
     transition: sortTransition(),
   })
+  const longPress = useLongPress(
+    (el) => onLongPress?.(item, (el.querySelector('[data-tile-icon]') ?? el).getBoundingClientRect()),
+    { delay: LONG_PRESS, tolerance: LONG_PRESS_TOLERANCE },
+  )
+  // 拖拽禁用时由长按弹出菜单；拖拽可用时长按交给拖拽库（见 NavGrid）
+  const handleListeners = onLongPress ? { ...listeners, ...longPress } : listeners
 
   useLayoutEffect(() => {
     const body = bodyRef.current
@@ -175,7 +190,7 @@ export function SortableNavTile({
       editing={editing}
       openInNewTab={openInNewTab}
       state={isDragging ? 'placeholder' : 'idle'}
-      handle={{ attributes, listeners }}
+      handle={{ attributes, listeners: handleListeners }}
       onLinkClick={(e) => onLinkClick(e, item)}
       onContextMenu={(e) => onContextMenu(e, item)}
       onRemove={() => onRemove(item)}

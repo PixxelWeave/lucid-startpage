@@ -1,3 +1,4 @@
+import { createId } from '@/lib/id'
 import { idbDelete, idbGet, idbKeys, idbSet } from '@/lib/idb'
 import { compressImage } from '@/lib/image'
 
@@ -36,7 +37,7 @@ function targetSide() {
 /** 压缩并保存图片，返回新的图片 id。 */
 export async function saveBackgroundImage(file: File): Promise<string> {
   const { blob, placeholder } = await compressImage(file, targetSide())
-  const id = crypto.randomUUID()
+  const id = createId()
   await idbSet(keyOf(id), { image: blob, placeholder } satisfies BackgroundRecord)
   return id
 }

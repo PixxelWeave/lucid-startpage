@@ -7,7 +7,9 @@
 // - 收起：搜索框先快速淡出 → 图标区下滑 → 时钟稍后淡入
 // - 主屏只显示 行 × 列 个图标，其余图标的“追赶”动画见 NavGrid.module.scss
 
-$panel-header-height: 72px;
+// 顶栏高度（不含安全区）；实际高度再加上状态栏 / 刘海的安全区
+$panel-bar-height: 72px;
+$panel-header-height: calc(#{$panel-bar-height} + #{t.safe-area(top)});
 
 
 .app {
@@ -18,8 +20,8 @@ $panel-header-height: 72px;
 
 .toolbar {
   position: fixed;
-  top: t.space(4);
-  right: t.space(4);
+  top: calc(#{t.space(4)} + #{t.safe-area(top)});
+  right: calc(#{t.space(4)} + #{t.safe-area(right)});
   z-index: 2;
   transition:
     opacity t.duration(medium) t.easing(standard),
@@ -40,7 +42,7 @@ $panel-header-height: 72px;
   justify-content: center;
 
   // 顶部距离来自设置（homeTopOffset，占窗口高度的百分比）
-  padding: var(--home-top, 18vh) t.space(4) 0;
+  padding: calc(var(--home-top, 18vh) + #{t.safe-area(top)}) t.space(4) 0;
 
   // 收起：等图标区先让开再淡入
   transition:
@@ -104,7 +106,8 @@ $panel-header-height: 72px;
   display: flex;
   justify-content: center;
   height: $panel-header-height;
-  padding: 0 t.space(4);
+  padding: t.safe-area(top) calc(#{t.space(4)} + #{t.safe-area(right)}) 0
+    calc(#{t.space(4)} + #{t.safe-area(left)});
   opacity: 0;
   pointer-events: none;
 
@@ -153,7 +156,8 @@ $panel-header-height: 72px;
   overflow: hidden;
 
   // 顶部留出顶栏高度；内容滚动时从顶栏下方经过
-  padding: #{$panel-header-height} t.space(4) t.space(16);
+  padding: $panel-header-height calc(#{t.space(4)} + #{t.safe-area(right)})
+    calc(#{t.space(16)} + #{t.safe-area(bottom)}) calc(#{t.space(4)} + #{t.safe-area(left)});
   overscroll-behavior: contain;
 
   // 展开且动画结束后才允许滚动

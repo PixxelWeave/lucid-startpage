@@ -2,7 +2,7 @@
   @include t.type(body-medium);
 
   // 重置 popover 默认居中，固定在底部中央
-  inset: auto auto t.space(6) 50%;
+  inset: auto auto calc(#{t.space(6)} + #{t.safe-area(bottom)}) 50%;
   min-width: 200px;
   max-width: min(560px, 100vw - 32px);
   margin: 0;
@@ -14,19 +14,26 @@
   box-shadow: t.elevation(3);
   opacity: 0;
   transform: translate(-50%, 8px);
-  transition:
-    opacity t.duration(short) t.easing(standard),
-    transform t.duration(medium) t.easing(emphasized-decelerate),
-    overlay t.duration(medium) allow-discrete,
-    display t.duration(medium) allow-discrete;
 
+  // 小浮层（动效规则见 tokens 的 Motion）：进场上移淡入；退场原路返回（data-closing，见 lib/exitTransition.ts）
   &:popover-open {
     opacity: 1;
     transform: translate(-50%, 0);
+    transition:
+      opacity t.duration(short) t.easing(standard),
+      transform t.duration(medium) t.easing(emphasized-decelerate);
 
     @starting-style {
       opacity: 0;
       transform: translate(-50%, 8px);
     }
+  }
+
+  &:popover-open[data-closing] {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+    transition:
+      opacity t.duration(short) t.easing(standard) calc(#{t.duration(medium)} - #{t.duration(short)}),
+      transform t.duration(medium) t.easing(emphasized-accelerate);
   }
 }

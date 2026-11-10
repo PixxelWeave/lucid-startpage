@@ -3,6 +3,7 @@
 // 仅在 `pnpm dev` 下通过 设置 → 数据 → “载入示例导航” 动态加载，不会进入构建产物。
 // =============================================================================
 
+import { createId } from '@/lib/id'
 import { iconPresets } from './icon'
 import type { NavIcon, NavItem } from './types'
 
@@ -66,5 +67,5 @@ const MOCK: [name: string, url: string, icon: NavIcon][] = [
 ]
 
 export function createMockItems(): NavItem[] {
-  return MOCK.map(([name, url, icon]) => ({ id: crypto.randomUUID(), name, url, icon }))
+  return MOCK.map(([name, url, icon]) => ({ id: createId(), name, url, icon }))
 }

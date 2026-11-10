@@ -1,4 +1,4 @@
-// M3 menu：卡片容器 + 菜单项；进场为从锚点方向轻微放大淡入
+// M3 menu：卡片容器 + 菜单项。进场从锚点方向轻微放大淡入；关闭时直接消失，没有退场动画
 
 .menu {
   // 重置 popover 的默认居中布局，位置由 JS 设置 left / top
@@ -14,25 +14,49 @@
   box-shadow: t.elevation(2);
   opacity: 0;
   transform: scale(0.92);
-  transition:
-    opacity t.duration(short) t.easing(standard),
-    transform t.duration(short) t.easing(emphasized-accelerate),
-    overlay t.duration(short) allow-discrete,
-    display t.duration(short) allow-discrete;
 
   &:popover-open {
     opacity: 1;
     transform: none;
     transition:
       opacity t.duration(short) t.easing(standard),
-      transform t.duration(medium) t.easing(emphasized-decelerate),
-      overlay t.duration(medium) allow-discrete,
-      display t.duration(medium) allow-discrete;
+      transform t.duration(medium) t.easing(emphasized-decelerate);
 
     @starting-style {
       opacity: 0;
       transform: scale(0.92);
     }
+  }
+
+}
+
+// 锚定在元素旁（触屏长按，iOS 主屏幕）：从锚点方向弹性放大弹出，菜单项依次淡入。
+// transform-origin 由 Menu.tsx 按弹出方向设置
+.anchored:popover-open {
+  transition:
+    opacity t.duration(short) t.easing(standard),
+    transform t.duration(long) t.easing(spring);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  .header,
+  .items > * {
+    animation: item-in t.duration(medium) t.easing(emphasized-decelerate) both;
+  }
+
+  // 标题先出现，菜单项按顺序（--index 由 Menu.tsx 写入）依次错开
+  .items > * {
+    animation-delay: calc(#{t.stagger(delay)} + var(--index, 0) * #{t.stagger(step)});
+  }
+}
+
+@keyframes item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
 

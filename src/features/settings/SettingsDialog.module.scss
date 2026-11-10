@@ -138,6 +138,16 @@
   color: t.color(on-surface-variant);
 }
 
+// 手机：按屏幕比例（--screen-ratio，由 TSX 写入）显示瘦长的预览，居中
+@include t.compact {
+  .background-preview {
+    width: 45%;
+    max-height: none;
+    margin-inline: auto;
+    aspect-ratio: var(--screen-ratio, 9 / 19.5);
+  }
+}
+
 .background-preview-image::after {
   content: '';
   position: absolute;
@@ -145,36 +155,72 @@
   background: t.alpha(surface, var(--preview-dim, 0%));
 }
 
-// 窄屏：分类改为顶部横向滚动
-@media (width < 640px) {
-  .layout {
-    grid-template-rows: auto 1fr;
-    grid-template-columns: minmax(0, 1fr);
-    min-height: 0;
+// ---- 紧凑布局（手机）：底部 sheet，两级菜单 ---------------------------------
+
+// 高度由 Modal 的 sheet 撑满（flex），这里只负责纵向排布
+.sheet {
+  display: flex;
+  flex-direction: column;
+}
+
+// 拖动条 + 标题栏：整块可向下拖动关闭；禁止浏览器把这里的触摸当作滚动
+.sheet-header {
+  flex-shrink: 0;
+  padding: t.space(2) t.space(2) 0;
+  touch-action: none;
+}
+
+.sheet-bar {
+  display: flex;
+  gap: t.space(1);
+  align-items: center;
+  height: 48px;
+}
+
+.sheet-title {
+  @include t.type(title-large);
+
+  margin: 0;
+}
+
+.sheet-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: t.space(4);
+  overflow-y: auto;
+  padding: t.space(2) t.space(4) calc(#{t.space(6)} + #{t.safe-area(bottom)});
+  overscroll-behavior: contain;
+
+  > * {
+    flex-shrink: 0;
   }
 
-  .sidebar {
-    overflow: visible;
-    padding-bottom: t.space(2);
-    border-right: none;
-    border-bottom: 1px solid t.color(outline-variant);
+  // 预览吸顶时贴住滚动区顶部
+  .preview {
+    top: calc(-1 * #{t.space(2)});
   }
+}
 
-  .nav {
-    flex-direction: row;
-    overflow-x: auto;
+// 进入下一级从右侧滑入，返回从左侧滑入（与系统设置一致）
+.slide-forward {
+  animation: slide-forward t.duration(medium) t.easing(emphasized-decelerate);
+}
+
+.slide-back {
+  animation: slide-back t.duration(medium) t.easing(emphasized-decelerate);
+}
+
+@keyframes slide-forward {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
   }
+}
 
-  .nav-item {
-    width: auto;
-  }
-
-  .content {
-    min-height: 0;
-    padding: t.space(4);
-  }
-
-  .hero {
-    padding: t.space(6) t.space(4);
+@keyframes slide-back {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
   }
 }

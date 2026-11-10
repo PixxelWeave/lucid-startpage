@@ -57,6 +57,23 @@
   color: t.color(on-surface-variant);
 }
 
+// 紧凑布局：一行放不下时，较宽的控件（滑块、分段按钮、色板）换到文字下方（同 Android 设置）
+@include t.compact {
+  .item {
+    flex-wrap: wrap;
+    row-gap: t.space(3);
+  }
+
+  // 文字按 8em 参与换行判断：只有右侧控件放不下时才换行，图标与文字始终在同一行
+  .text {
+    flex: 1 1 8em;
+  }
+
+  .trailing {
+    max-width: 100%;
+  }
+}
+
 .danger .title {
   color: t.color(error);
 }

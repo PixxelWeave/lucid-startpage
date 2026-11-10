@@ -16,6 +16,7 @@ import { toHex6 } from '@/lib/color'
 import { cx } from '@/lib/cx'
 import { imageFileToDataUrl } from '@/lib/image'
 import { useDebouncedValue } from '@/lib/useDebouncedValue'
+import { COMPACT_QUERY, useMediaQuery } from '@/lib/useMediaQuery'
 import { hostnameOf, normalizeUrl, rootDomain } from '@/lib/url'
 import { iconPresets, sameSource, SCALE_MAX, SCALE_MIN } from './icon'
 import {
@@ -61,6 +62,8 @@ interface NavItemDialogProps {
 export function NavItemDialog({ open, item, onSubmit, onClose }: NavItemDialogProps) {
   const formId = useId()
   const fileInput = useRef<HTMLInputElement>(null)
+  // 手机上为底部 sheet（同设置）
+  const compact = useMediaQuery(COMPACT_QUERY)
   const lib = useIconLibrary()
 
   const [url, setUrl] = useState(item?.url ?? '')
@@ -157,6 +160,7 @@ export function NavItemDialog({ open, item, onSubmit, onClose }: NavItemDialogPr
       onClose={onClose}
       title={item ? '编辑导航' : '添加导航'}
       size="wide"
+      sheet={compact}
       actions={
         <>
           <Button variant="text" onClick={onClose}>

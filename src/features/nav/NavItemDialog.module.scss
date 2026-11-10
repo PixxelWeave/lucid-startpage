@@ -87,8 +87,11 @@
     transition: transform t.duration(short) t.easing(standard);
   }
 
-  &:hover > :first-child {
-    transform: scale(1.05);
+  // 只在能悬停的设备上（触屏上 :hover 会粘住）
+  @media (hover: hover) {
+    &:hover > :first-child {
+      transform: scale(1.05);
+    }
   }
 }
 

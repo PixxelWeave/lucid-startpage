@@ -41,8 +41,11 @@
   background: t.color(surface-container);
   transition: transform t.duration(medium) t.easing(emphasized-decelerate);
 
-  .add:hover & {
-    transform: scale(1.04);
+  // 只在能悬停的设备上（触屏上 :hover 会粘住）
+  @media (hover: hover) {
+    .add:hover & {
+      transform: scale(1.04);
+    }
   }
 
   .add:active & {
@@ -68,8 +71,6 @@
 // data-chase 在 NavTile 的内层元素上（根元素的 transition 由拖拽库内联接管），“添加”在其根元素上。
 
 $chase-distance: 40vh;
-$chase-delay: 60ms;
-$chase-row-stagger: 30ms;
 
 .grid [data-chase='hidden'] {
   opacity: 0;
@@ -82,7 +83,7 @@ $chase-row-stagger: 30ms;
 }
 
 .grid [data-chase='shown'] {
-  $delay: calc(var(--chase-row, 0) * #{$chase-row-stagger} + #{$chase-delay});
+  $delay: calc(var(--chase-row, 0) * #{t.stagger(step)} + #{t.stagger(delay)});
 
   opacity: 1;
   translate: none;
@@ -142,36 +143,46 @@ $chase-row-stagger: 30ms;
 .grouped {
   display: flex;
   flex-direction: column;
-  gap: t.space(3);
 }
 
-// 每个字母一张卡片；左右向外延伸 space(3)（同主屏框），内容仍与网格 / 顶栏对齐
+// 字母视图：每个字母一段，段首是“字母 + 分割线”的小标题，图标排在下方。
+// 全部在网格宽度之内：标题与图标的可见边缘（以及顶栏按钮）对齐，图标仍按网格的列数排列
+
+// 图标在格子里的内缩
+$tile-inset: calc((#{t.layout(tile-width)} - #{t.layout(icon-size)}) / 2);
+
 .group {
   display: flex;
-  gap: t.space(2);
-  margin: 0 calc(-1 * #{t.space(3)});
-  padding: t.space(1) t.space(3);
-  border-radius: t.radius(xl);
-  background: t.alpha(surface-container-highest, 55%);
+  flex-direction: column;
+  gap: t.space(1);
+  padding-bottom: t.space(4);
   animation: group-in t.duration(long) t.easing(standard) both;
 }
 
+.group-header {
+  display: flex;
+  gap: t.space(3);
+  align-items: center;
+  padding-inline: $tile-inset;
+
+  // 字母后的分割线延伸到右侧
+  &::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid t.color(outline-variant);
+  }
+}
+
 .group-letter {
-  @include t.flex-center;
-  @include t.type(headline-small);
+  @include t.type(title-medium);
 
-  flex-shrink: 0;
-  width: t.layout(tile-width);
-
-  // 与图标（上下内边距 + 图标尺寸）垂直居中对齐
-  height: calc(#{t.layout(icon-size)} + 2 * #{t.space(2)});
   color: t.color(primary);
   animation: letter-in t.duration(long) t.easing(standard) both;
 }
 
 .group-tiles {
   display: grid;
-  grid-template-columns: repeat(var(--group-cols), t.layout(tile-width));
+  grid-template-columns: repeat(#{t.grid-cols()}, t.layout(tile-width));
   gap: t.space(4) t.space(2);
 }
 

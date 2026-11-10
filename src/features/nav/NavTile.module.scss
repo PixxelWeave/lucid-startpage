@@ -42,8 +42,11 @@
     transform t.duration(medium) t.easing(emphasized-decelerate),
     box-shadow t.duration(medium) t.easing(standard);
 
-  .link:hover & {
-    transform: scale(1.04);
+  // 只在能悬停的设备上：触屏上 :hover 会在点击 / 长按后“粘住”，图标停在放大状态
+  @media (hover: hover) {
+    .link:hover & {
+      transform: scale(1.04);
+    }
   }
 
   .link:active & {
@@ -130,5 +133,15 @@
   .link:hover .icon {
     box-shadow: t.elevation(3);
     transform: scale(1.12);
+
+    // 浮起：从按下时的缩小状态弹性放大（松手缩回见 NavGrid 的 dropAnimation）
+    animation: lift-in t.duration(long) t.easing(spring);
+  }
+}
+
+@keyframes lift-in {
+  from {
+    box-shadow: t.elevation(0);
+    transform: scale(0.94);
   }
 }

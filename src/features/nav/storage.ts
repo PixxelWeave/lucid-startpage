@@ -1,3 +1,4 @@
+import { createId } from '@/lib/id'
 import { createStore } from '@/lib/storage'
 import { hostnameOf, normalizeUrl } from '@/lib/url'
 import { clampScale, iconPresets } from './icon'
@@ -60,8 +61,8 @@ export function parseNavItems(raw: unknown): NavItem[] | null {
     const url = normalizeUrl(entry.url)
     if (!url) continue
 
-    let id = typeof entry.id === 'string' && entry.id ? entry.id : crypto.randomUUID()
-    if (seen.has(id)) id = crypto.randomUUID()
+    let id = typeof entry.id === 'string' && entry.id ? entry.id : createId()
+    if (seen.has(id)) id = createId()
     seen.add(id)
 
     items.push({

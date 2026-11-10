@@ -9,6 +9,7 @@ import {
   ListItem,
   Modal,
   SegmentedButton,
+  SheetHandle,
   Slider,
   Switch,
   type ColorSwatch,
@@ -23,6 +24,7 @@ import { useBackgroundImage } from '@/features/background/useBackgroundImage'
 import type { NavItemsApi } from '@/features/nav/useNavItems'
 import { isExtension } from '@/lib/env'
 import { cx } from '@/lib/cx'
+import { COMPACT_QUERY, useMediaQuery } from '@/lib/useMediaQuery'
 import { downloadBackup, parseBackup } from './backup'
 import { useSettings } from './SettingsContext'
 import {
@@ -117,6 +119,24 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
 
   const section = SECTIONS.find((s) => s.id === sectionId)!
   const itemCount = nav.items?.length ?? 0
+
+  // 紧凑布局（手机）：底部 sheet + 两级菜单（分类列表 → 分类详情）
+  const compact = useMediaQuery(COMPACT_QUERY)
+  const [mobileSectionId, setMobileSectionId] = useState<SectionId | null>(null)
+  const [mobileDirection, setMobileDirection] = useState<'forward' | 'back'>('forward')
+  const mobileSection = SECTIONS.find((s) => s.id === mobileSectionId)
+  // 每次打开都从分类列表开始（关闭时不重置，避免 sheet 滑出时内容跳变）
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) setMobileSectionId(null)
+  }
+  // 手机上背景预览按屏幕的实际比例（瘦长）显示，更接近真实效果
+  const screenRatio = `${window.innerWidth} / ${window.innerHeight}`
+  const openMobileSection = (id: SectionId | null) => {
+    setMobileDirection(id ? 'forward' : 'back')
+    setMobileSectionId(id)
+  }
 
   const handleImport = async (file: File | undefined) => {
     if (!file) return
@@ -371,13 +391,14 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
                 {
                   backgroundImage: `url(${background.url})`,
                   '--preview-dim': `${settings.backgroundDim}%`,
+                  '--screen-ratio': screenRatio,
                 } as CSSProperties
               }
               role="img"
               aria-label="当前背景图片预览"
             />
           ) : (
-            <div className={styles.backgroundPreview}>
+            <div className={styles.backgroundPreview} style={{ '--screen-ratio': screenRatio } as CSSProperties}>
               <Icon name="image" size={32} />
               {processingImage ? '正在处理图片…' : '未设置背景图片'}
             </div>
@@ -523,9 +544,59 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
     ),
   }
 
+  // 时钟分类顶部的实时预览（两种布局共用）
+  const clockPreview = (
+    <Card className={cx(styles.hero, styles.preview)}>
+      {clockOn ? <Clock settings={settings} compact /> : <p className={styles.heroDescription}>时钟已隐藏</p>}
+    </Card>
+  )
+
+  const mobileLayout = (
+    <div className={styles.sheet}>
+      {/* 拖动条 + 标题栏：可向下拖动关闭（见 Modal 的 sheet） */}
+      <div className={styles.sheetHeader} data-sheet-grab>
+        <SheetHandle />
+        <div className={styles.sheetBar}>
+          {mobileSection ? (
+            <IconButton icon="arrow-back" label="返回" onClick={() => openMobileSection(null)} />
+          ) : (
+            <IconButton icon="close" label="关闭" onClick={onClose} />
+          )}
+          <h2 className={styles.sheetTitle}>{mobileSection?.label ?? '设置'}</h2>
+        </div>
+      </div>
+      <section
+        key={mobileSectionId ?? 'root'}
+        className={cx(styles.sheetBody, mobileDirection === 'back' ? styles.slideBack : styles.slideForward)}
+        aria-label={mobileSection?.label ?? '设置分类'}
+      >
+        {mobileSection ? (
+          <>
+            {mobileSection.id === 'clock' && clockPreview}
+            {panels[mobileSection.id]}
+          </>
+        ) : (
+          <Card>
+            {SECTIONS.map((s) => (
+              <ListItem
+                key={s.id}
+                title={s.label}
+                description={s.description}
+                leading={<IconTile icon={s.icon} tone={s.tone} />}
+                trailing={<Icon name="chevron-right" />}
+                onClick={() => openMobileSection(s.id)}
+              />
+            ))}
+          </Card>
+        )}
+      </section>
+    </div>
+  )
+
   return (
     <>
-      <Modal open={open} onClose={onClose} title="设置" size="lg" bare>
+      <Modal open={open} onClose={onClose} title="设置" size="lg" bare sheet={compact}>
+        {compact ? mobileLayout : (
         <div className={styles.layout}>
           <aside className={styles.sidebar}>
             <div className={styles.sidebarHeader}>
@@ -554,13 +625,7 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
           <section key={sectionId} className={styles.content} aria-label={section.label}>
             {sectionId === 'clock' ? (
               // 时钟分类：说明卡片换成实时预览
-              <Card className={cx(styles.hero, styles.preview)}>
-                {clockOn ? (
-                  <Clock settings={settings} compact />
-                ) : (
-                  <p className={styles.heroDescription}>时钟已隐藏</p>
-                )}
-              </Card>
+              clockPreview
             ) : (
               <Card className={styles.hero}>
                 <IconTile icon={section.icon} tone={section.tone} size="lg" />
@@ -571,6 +636,7 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
             {panels[sectionId]}
           </section>
         </div>
+        )}
       </Modal>
 
       <Modal

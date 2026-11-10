@@ -32,6 +32,25 @@ body,
   height: 100%;
 }
 
+// 只允许平移，禁止双指缩放与双击放大（见 lib/preventZoom.ts）；
+// 去掉 iOS 点击链接 / 按钮时默认的暗色高亮块（按下反馈由各组件自己的 :active 样式负责）
+html {
+  touch-action: pan-x pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+
+// 用鼠标 / 触屏操作时不显示焦点框（弹窗 / 菜单关闭后焦点回到触发按钮，iOS 会显示出来）；
+// 键盘操作时照常显示（见 lib/inputModality.ts）
+:root[data-input='pointer'] :focus-visible {
+  outline: none;
+}
+
+// iOS 主屏幕模式下文档比屏幕短一截，文档向下补齐，背景铺到屏幕底边（见 lib/viewportGap.ts）。
+// 只补文档：fixed 元素本来就按整个屏幕排布（真机实测），补了反而会伸出屏幕底边
+html {
+  height: calc(100% + #{t.viewport-gap()});
+}
+
 body {
   @include t.type(body-medium);
 
@@ -50,6 +69,23 @@ body {
   background:
     linear-gradient(t.alpha(surface, var(--background-dim)) 0 0),
     var(--background-placeholder) center / cover no-repeat t.color(surface);
+}
+
+// 触屏：文字不可选中，长按不弹出系统菜单（长按留给图标菜单 / 拖动）；输入框仍可选中、编辑
+@include t.touch {
+  body {
+    -webkit-touch-callout: none;
+    // stylelint-disable-next-line property-no-vendor-prefix -- Safari 仍需前缀
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea {
+    // stylelint-disable-next-line property-no-vendor-prefix -- Safari 仍需前缀
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 input,

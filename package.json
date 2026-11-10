@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:web": "tsc -b && vite build --mode web",
     "lint": "oxlint && stylelint \"src/**/*.scss\"",
     "preview": "vite preview",
+    "preview:web": "vite preview --mode web --host --port 4173",
     "zip": "pnpm build && cd dist && zip -qr ../startpage-extension.zip . && echo 'Packed: startpage-extension.zip'",
+    "deploy:web": "bash scripts/deploy-web.sh",
     "icons:sync": "node scripts/sync-itab-icons.mjs"
   },
   "dependencies": {
@@ -31,7 +34,8 @@
     "stylelint": "^17.16.0",
     "stylelint-config-standard-scss": "^17.0.0",
     "typescript": "~7.0.2",
-    "vite": "^8.3.6"
+    "vite": "^8.3.6",
+    "wrangler": "^4.159.0"
   },
   "packageManager": "pnpm@10.15.1"
 }
