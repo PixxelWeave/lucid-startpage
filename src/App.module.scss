@@ -12,15 +12,24 @@ $panel-bar-height: 72px;
 $panel-header-height: calc(#{$panel-bar-height} + #{t.safe-area(top)});
 
 
+// 主界面与右上角工具栏随文档排布（absolute，相对 #root），不用 fixed：
+// 页面停在固定的滚动位置（手机 Safari 标签页中为撑高部分的中间，见 lib/viewportGap.ts），
+// 放在与可视区域重合的位置，看起来与 fixed 相同。手机 Safari 会把贴着屏幕边缘的 fixed 层当作页头 / 页脚，
+// 交互后改用颜色涂状态栏与工具栏，遮住铺到工具栏后面的背景（真机实测）
 .app {
-  position: fixed;
-  inset: 0;
+  position: absolute;
+  top: t.browser-bars();
+  right: 0;
+  left: 0;
+
+  // #root 高度 = 可视区域 + 上下撑高（+ 主屏幕模式的补齐）；去掉撑高部分即可视区域
+  height: calc(100% - 2 * #{t.browser-bars()});
   overflow: hidden;
 }
 
 .toolbar {
-  position: fixed;
-  top: calc(#{t.space(4)} + #{t.safe-area(top)});
+  position: absolute;
+  top: calc(#{t.browser-bars()} + #{t.space(4)} + #{t.safe-area(top)});
   right: calc(#{t.space(4)} + #{t.safe-area(right)});
   z-index: 2;
   transition:
@@ -66,18 +75,28 @@ $panel-header-height: calc(#{$panel-bar-height} + #{t.safe-area(top)});
 
 // ---- 背景模糊层 --------------------------------------------------------------
 
+// 资源库的模糊蒙层：放在主界面之外、相对 #root 铺满整个文档，手机 Safari 中连同撑高到
+// 状态栏与工具栏后面的部分一起模糊（见 lib/viewportGap.ts）。
+// 主屏时彻底隐藏（visibility），不只是透明：Safari 会从贴边的半透明 / 毛玻璃层取色去涂工具栏（即使 opacity 为 0）
 .backdrop {
   position: absolute;
   inset: 0;
+  visibility: hidden;
   background: t.alpha(surface, 30%);
   opacity: 0;
   backdrop-filter: blur(t.blur(md)) saturate(1.2);
   pointer-events: none;
-  transition: opacity t.duration(extra-long) t.easing(standard);
 
-  .expanded & {
-    opacity: 1;
-  }
+  // 收起：淡出结束后再隐藏
+  transition:
+    opacity t.duration(extra-long) t.easing(standard),
+    visibility t.duration(extra-long) allow-discrete;
+
+}
+
+.backdrop-visible {
+  visibility: visible;
+  opacity: 1;
 }
 
 // ---- 图标区 ------------------------------------------------------------------

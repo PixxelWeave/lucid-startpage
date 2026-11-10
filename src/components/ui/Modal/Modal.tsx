@@ -1,5 +1,6 @@
-import { useId, useRef, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type PointerEvent, type ReactNode } from 'react'
 import { cx } from '@/lib/cx'
+import { holdScrim } from '@/lib/scrim'
 import { usePresence } from '@/lib/usePresence'
 import styles from './Modal.module.scss'
 
@@ -69,6 +70,9 @@ export function Modal({
     },
     hide: (dialog) => dialog.close(),
   })
+
+  // 遮罩：不用 ::backdrop（手机 Safari 会据此给工具栏着色），改用随文档铺满的遮罩（见 lib/scrim.ts）
+  useEffect(() => (open ? holdScrim() : undefined), [open])
 
   // ---- sheet 拖动关闭 ----
   const startDrag = (e: PointerEvent<HTMLDialogElement>) => {

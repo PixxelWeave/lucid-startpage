@@ -32,6 +32,37 @@ body,
   height: 100%;
 }
 
+// 顶层元素（对话框、菜单、提示条）的 ::backdrop 默认是铺满屏幕的 fixed 层，即使透明，
+// 手机 Safari 也会据此给状态栏与工具栏着色；统一改为 absolute（对话框另行设置覆盖可视区域）
+::backdrop {
+  position: absolute;
+}
+
+// 背景图层（Background）、资源库蒙层等相对 #root 铺满整个文档
+#root {
+  position: relative;
+
+  // 弹窗遮罩（见 lib/scrim.ts）：随文档铺满，手机 Safari 中连同状态栏与工具栏后面一起变暗
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    visibility: hidden;
+    background: t.alpha(scrim, 32%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity t.duration(medium) t.easing(standard),
+      visibility t.duration(medium) allow-discrete;
+  }
+}
+
+:root[data-scrim] #root::after {
+  visibility: visible;
+  opacity: 1;
+}
+
 // 只允许平移，禁止双指缩放与双击放大（见 lib/preventZoom.ts）；
 // 去掉 iOS 点击链接 / 按钮时默认的暗色高亮块（按下反馈由各组件自己的 :active 样式负责）
 html {
@@ -48,7 +79,7 @@ html {
 // iOS 主屏幕模式下文档比屏幕短一截，文档向下补齐，背景铺到屏幕底边（见 lib/viewportGap.ts）。
 // 只补文档：fixed 元素本来就按整个屏幕排布（真机实测），补了反而会伸出屏幕底边
 html {
-  height: calc(100% + #{t.viewport-gap()});
+  height: calc(100% + #{t.viewport-gap()} + 2 * #{t.browser-bars()});
 }
 
 body {
@@ -63,8 +94,8 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-// 自定义背景图：首屏先铺模糊占位图 + 遮罩（变量由 features/background/paint.ts 写入），
-// 原图加载后由 <Background> 淡入覆盖
+// 自定义背景图：首屏先在画布（<body> 的背景）上铺模糊占位图 + 遮罩（变量由 features/background/paint.ts 写入），
+// 原图由 <Background> 图层淡入覆盖。按整个文档 cover，与 <Background> 图层（同样铺满文档）重合
 :root[data-background] body {
   background:
     linear-gradient(t.alpha(surface, var(--background-dim)) 0 0),

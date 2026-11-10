@@ -2,7 +2,9 @@
   @include t.type(body-medium);
 
   // 重置 popover 默认居中，固定在底部中央
-  inset: auto auto calc(#{t.space(6)} + #{t.safe-area(bottom)}) 50%;
+  // absolute 而非默认的 fixed（避免手机 Safari 工具栏着色），底部偏移按可视区域底部计算（见 tokens 的 visible-bottom）
+  position: absolute;
+  inset: auto auto calc(#{t.space(6)} + #{t.safe-area(bottom)} + #{t.visible-bottom()}) 50%;
   min-width: 200px;
   max-width: min(560px, 100vw - 32px);
   margin: 0;

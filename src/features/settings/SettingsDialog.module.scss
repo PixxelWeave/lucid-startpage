@@ -189,7 +189,9 @@
   flex-direction: column;
   gap: t.space(4);
   overflow-y: auto;
-  padding: t.space(2) t.space(4) calc(#{t.space(6)} + #{t.safe-area(bottom)});
+
+  // 底部留白含工具栏高度：手机 Safari 标签页中 sheet 伸到浮动工具栏后面（见 Modal 的 sheet）
+  padding: t.space(2) t.space(4) calc(#{t.space(6)} + #{t.safe-area(bottom)} + #{t.browser-bars()});
   overscroll-behavior: contain;
 
   > * {

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Safari 工具栏测试</title>
+    <!-- 说明见 docs/ios-safari.md。开发服务器下访问 /docs/safari-toolbar-test.html（不进入构建） -->
+    <style>
+      /* 条纹盒子：每 20px 一条刻度，每 100px 一种颜色，便于看出工具栏后面露出的是哪一段 */
+      .ruler {
+        background:
+          repeating-linear-gradient(to bottom, rgb(0 0 0 / 35%) 0 1px, transparent 1px 20px),
+          linear-gradient(
+            to bottom,
+            #e53935 0 100px,
+            #fb8c00 100px 200px,
+            #fdd835 200px 300px,
+            #43a047 300px 400px,
+            #1e88e5 400px 500px,
+            #8e24aa 500px 600px,
+            #e53935 600px 700px,
+            #fb8c00 700px 800px,
+            #fdd835 800px 900px,
+            #43a047 900px 1000px,
+            #1e88e5 1000px 1100px,
+            #8e24aa 1100px 1200px,
+            #e53935 1200px 1300px,
+            #fb8c00 1300px 1400px,
+            #fdd835 1400px 1500px
+          );
+      }
+      .label {
+        position: absolute;
+        left: 8px;
+        font: 600 12px/1 system-ui;
+        color: #000;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #222;
+      }
+      #bar {
+        position: fixed;
+        top: 50%;
+        left: 8px;
+        right: 8px;
+        z-index: 10;
+        transform: translateY(-50%);
+        padding: 10px;
+        border-radius: 12px;
+        background: rgb(255 255 255 / 92%);
+        color: #000;
+        font: 13px/1.5 system-ui;
+      }
+      #bar a {
+        display: inline-block;
+        margin: 2px 6px 2px 0;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #ddd;
+        color: #000;
+        text-decoration: none;
+      }
+      #bar a.on {
+        background: #1e88e5;
+        color: #fff;
+      }
+      #info {
+        margin-top: 6px;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <div>
+        <a href="?mode=flow">flow</a><a href="?mode=hidden">hidden</a><a href="?mode=fixed">fixed</a
+        ><a href="?mode=canvas">canvas</a><br /><a href="?mode=hidden-fixed">hidden+fixed</a
+        ><a href="?mode=hidden-theme">hidden+theme</a><a href="?mode=hidden-both">hidden+both</a><br /><a
+          href="?mode=hidden-backdrop"
+          >hidden+backdrop</a
+        ><a href="?mode=hidden-backdrop-visible">hidden+backdrop(visible)</a>
+      </div>
+      <button id="poke" type="button" style="margin-top: 6px; padding: 6px 14px; font: inherit">
+        点我（模拟操作）：<span id="count">0</span>
+      </button>
+      <div id="desc"></div>
+      <div id="info"></div>
+    </div>
+
+    <script>
+      const mode = new URLSearchParams(location.search).get('mode') || 'flow'
+      // 开发服务器会给页面注入 Lucid 的 theme-color：只在 *-theme / *-both 模式保留，其余移除，保证对照干净
+      if (!['hidden-theme', 'hidden-both'].includes(mode)) {
+        document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove())
+      }
+      document.querySelector(`#bar a[href="?mode=${mode}"]`)?.classList.add('on')
+      const EXTRA = 400 // 盒子比可视区域高出的部分（上下各一半）
+
+      // 带刻度文字的条纹盒子
+      function makeRuler(height) {
+        const box = document.createElement('div')
+        box.className = 'ruler'
+        box.style.cssText = `position:relative;height:${height}px`
+        for (let y = 0; y < height; y += 100) {
+          const label = document.createElement('div')
+          label.className = 'label'
+          label.style.top = `${y + 4}px`
+          label.textContent = `y = ${y}`
+          box.append(label)
+        }
+        return box
+      }
+
+      const desc = {
+        flow: '普通文档：盒子比可视区域高 400px，可以用手指正常滚动（对照组，相当于 GitHub）',
+        hidden: '禁止滚动（overflow: hidden），程序滚动到中间（Lucid 当前的做法）',
+        fixed: '固定定位的盒子，上下各伸出可视区域 200px（第一次尝试的做法）',
+        canvas: '只有网页背景（body 背景）画条纹，没有内容（第二次尝试的做法）',
+        'hidden-fixed': 'hidden + 一个铺满可视区域的透明固定层（同 Lucid 的主界面层）',
+        'hidden-theme': 'hidden + 深色主题色 theme-color #111318（同 Lucid）',
+        'hidden-both': 'hidden + 透明固定层 + 深色主题色',
+        'hidden-backdrop': 'hidden + 铺满可视区域的毛玻璃层（深色 30% + 模糊），透明度 0（同 Lucid 主屏）',
+        'hidden-backdrop-visible': 'hidden + 同样的毛玻璃层，显示出来（同 Lucid 资源库）',
+      }
+      if (mode === 'hidden-backdrop' || mode === 'hidden-backdrop-visible') {
+        const layer = document.createElement('div')
+        layer.style.cssText =
+          'position:fixed;inset:0;pointer-events:none;background:rgb(17 19 24 / 30%);' +
+          '-webkit-backdrop-filter:blur(24px) saturate(1.2);backdrop-filter:blur(24px) saturate(1.2);' +
+          `opacity:${mode === 'hidden-backdrop' ? 0 : 1}`
+        document.body.append(layer)
+      }
+      const base = mode.startsWith('hidden') ? 'hidden' : mode
+      if (mode === 'hidden-fixed' || mode === 'hidden-both') {
+        const layer = document.createElement('div')
+        layer.style.cssText = 'position:fixed;inset:0;pointer-events:none'
+        document.body.append(layer)
+      }
+      if (mode === 'hidden-theme' || mode === 'hidden-both') {
+        // 统一为深色主题色（注入的有浅 / 深两条，按系统主题生效）
+        document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.remove())
+        const meta = document.createElement('meta')
+        meta.name = 'theme-color'
+        meta.content = '#111318'
+        document.head.append(meta)
+      }
+      let pokes = 0
+      document.getElementById('poke').addEventListener('click', () => {
+        document.getElementById('count').textContent = String(++pokes)
+      })
+      document.getElementById('desc').textContent = desc[mode]
+
+      const vh = innerHeight
+      if (mode === 'flow') {
+        document.body.prepend(makeRuler(vh + EXTRA))
+      } else if (base === 'hidden') {
+        document.documentElement.style.overflow = 'hidden'
+        document.body.style.overflow = 'hidden'
+        document.body.prepend(makeRuler(vh + EXTRA))
+        requestAnimationFrame(() => scrollTo(0, EXTRA / 2))
+      } else if (mode === 'fixed') {
+        const ruler = makeRuler(vh + EXTRA)
+        ruler.style.position = 'fixed'
+        ruler.style.left = '0'
+        ruler.style.right = '0'
+        ruler.style.top = `${-EXTRA / 2}px`
+        document.body.prepend(ruler)
+      } else if (mode === 'canvas') {
+        document.body.className = 'ruler'
+        document.documentElement.style.background = 'none'
+        document.body.style.minHeight = '100vh'
+      }
+
+      const info = document.getElementById('info')
+      const update = () => {
+        info.textContent =
+          `scrollY ${Math.round(scrollY)} · 可视区域 ${innerHeight} · 屏幕 ${screen.height}` +
+          ` · 文档 ${document.documentElement.scrollHeight}`
+        requestAnimationFrame(update)
+      }
+      update()
+    </script>
+  </body>
+</html>

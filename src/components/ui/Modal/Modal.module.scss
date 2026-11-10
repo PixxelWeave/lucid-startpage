@@ -2,6 +2,9 @@
 // 比进场更快（medium），加速曲线，淡出与位移同时进行
 
 .dialog {
+  // absolute 而非默认的 fixed：放回可视区域并居中（避免手机 Safari 工具栏着色，见 tokens 的 visible-top）
+  position: absolute;
+  inset: t.visible-top() 0 t.visible-bottom();
   max-height: calc(100dvh - 32px);
   overflow: auto;
   padding: 0;
@@ -38,21 +41,12 @@
       transform t.duration(medium) t.easing(emphasized-accelerate);
   }
 
+  // 不画背景：遮罩改由 #root 上的一层负责（见 lib/scrim.ts）。::backdrop 仍负责接收点击外部关闭，
+  // 同样改为 absolute 并覆盖可视区域
   &::backdrop {
-    background: transparent;
-  }
-
-  &[open]::backdrop {
-    background: t.alpha(scrim, 32%);
-    transition: background-color t.duration(medium) t.easing(standard);
-
-    @starting-style {
-      background: transparent;
-    }
-  }
-
-  &[open][data-closing]::backdrop {
-    background: transparent;
+    position: absolute;
+    inset: t.visible-top() 0 t.visible-bottom();
+    background: none;
   }
 }
 
@@ -75,7 +69,10 @@
 .sheet {
   @include t.compact {
     // 上下两端锚定，不依赖 100dvh（iOS 主屏幕模式下视口高度不可靠）：顶部留在状态栏下方，底部贴住屏幕底边
-    inset: calc(#{t.safe-area(top)} + #{t.space(6)}) 0 0;
+    // 底部再向下伸出工具栏的高度（手机 Safari 标签页，其他情况为 0），铺到浮动工具栏后面；
+    // 底部内容相应加上同样的留白（见下方 .actions 与设置弹窗的 .sheet-body）
+    inset: calc(#{t.visible-top()} + #{t.safe-area(top)} + #{t.space(6)}) 0
+      calc(#{t.visible-bottom()} - #{t.browser-bars()});
     width: 100%;
     max-width: none;
     height: auto;
@@ -133,7 +130,7 @@
     }
 
     .actions {
-      padding-bottom: calc(#{t.space(4)} + #{t.safe-area(bottom)});
+      padding-bottom: calc(#{t.space(4)} + #{t.safe-area(bottom)} + #{t.browser-bars()});
     }
   }
 }

@@ -1,13 +1,15 @@
-// 原图层：盖在 <body> 的模糊占位图之上，加载完成后淡入。
+// 背景图层：先显示模糊占位图（--background-placeholder，与 <body> 上的相同），原图加载完成后在其上淡入。
 // 遮罩用 surface 色：浅色主题提亮、深色主题压暗，两种主题下文字对比度都会提高。
-// --background-dim 由 paint.ts 写在 :root 上。
+// --background-placeholder / --background-dim 由 paint.ts 写在 :root 上。
+// 随文档排布（不是 fixed），铺满整个文档：手机 Safari 标签页中文档上下各撑高了工具栏的总高度
+// 并滚动到中间（见 lib/viewportGap.ts），状态栏与浮动工具栏后面只会画出文档中真实元素的内容
+// （fixed 元素与画布背景都画不过去，真机实测）。其他情况下文档即可视区域，效果同铺满屏幕。
 
 .background {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  opacity: 0;
+  background: var(--background-placeholder) center / cover no-repeat;
   pointer-events: none;
-  transition: opacity t.duration(long) t.easing(standard);
 
   &::after {
     content: '';
@@ -17,13 +19,15 @@
   }
 }
 
-.loaded {
-  opacity: 1;
-}
-
 .image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity t.duration(long) t.easing(standard);
+}
+
+.loaded .image {
+  opacity: 1;
 }

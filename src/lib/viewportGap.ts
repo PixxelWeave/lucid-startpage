@@ -50,6 +50,36 @@ export function watchViewportGap() {
   window.addEventListener('resize', update)
 }
 
+/**
+ * Safari 标签页（手机）：上方状态栏与下方浮动工具栏是半透明的，后面显示的是文档中滚动到可视区域之外的内容
+ * （文档范围以外只填背景色，固定定位的元素也伸不过去）。
+ * 测出两者的总高度写入 --browser-bars：文档上下各撑高这么多（global.scss 的 html），
+ * 再滚动到中间，使多出的部分正好位于状态栏与工具栏后面，背景随之铺过去。
+ * 不区分上下各占多少：两边都按总高度撑高，保证都能盖住。电脑上与主屏幕模式下为 0
+ */
+export function browserBarsHeight(): number {
+  const touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+  if (!touch || isStandalone()) return 0
+  return Math.max(0, screenHeight() - window.innerHeight)
+}
+
+export function watchBrowserBars() {
+  const update = () => {
+    document.documentElement.style.setProperty('--browser-bars', `${browserBarsHeight()}px`)
+    // 布局更新后再滚动（用户手势无法滚动页面，这里是程序设定的位置）
+    requestAnimationFrame(restoreScroll)
+  }
+  update()
+  window.addEventListener('resize', update)
+  window.addEventListener('load', update)
+}
+
+/** 页面应停留的滚动位置：Safari 标签页中为上方撑高的部分，其他情况为顶部 */
+export function restoreScroll() {
+  const top = browserBarsHeight()
+  if (window.scrollX !== 0 || window.scrollY !== top) window.scrollTo(0, top)
+}
+
 /** 视口诊断数据（设置 → 关于），用于排查 iOS 主屏幕模式下的布局问题 */
 export function viewportDiagnostics(): Record<string, string> {
   const root = document.documentElement
@@ -73,6 +103,8 @@ export function viewportDiagnostics(): Record<string, string> {
     可视区域高度: `${Math.round(window.visualViewport?.height ?? 0)}`,
     文档高度: `${Math.round(root.getBoundingClientRect().height)}`,
     补齐缺口: root.style.getPropertyValue('--viewport-gap') || '未设置',
+    浏览器工具栏: root.style.getPropertyValue('--browser-bars') || '未设置',
+    页面滚动位置: `${Math.round(window.scrollY)}`,
     安全区上: safeTop,
     安全区下: safeBottom,
   }

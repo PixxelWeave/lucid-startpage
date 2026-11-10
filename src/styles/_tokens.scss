@@ -274,6 +274,27 @@ $state: (
   @return var(--viewport-gap, 0px);
 }
 
+/// Safari 标签页（手机）上下工具栏的总高度（见 src/lib/viewportGap.ts），其他情况为 0。
+/// 用于让背景层向上下延伸到工具栏后面
+@function browser-bars() {
+  // stylelint-disable-next-line length-zero-no-unit
+  @return var(--browser-bars, 0px);
+}
+
+/// 顶层（top layer）元素——对话框、菜单、提示条及其 ::backdrop——在手机 Safari 中不能用 fixed：
+/// Safari 会从贴边的 fixed 层（即使透明）取色去涂状态栏与工具栏。改用 position: absolute 后，
+/// 它们相对文档原点处的初始包含块（可视区域大小）定位，而页面停在固定的滚动位置（见 lib/viewportGap.ts），
+/// 用下面两个偏移量把它们放回可视区域：
+/// - visible-top：可视区域顶部相对初始包含块顶部的偏移（Safari 标签页中为撑高部分）
+/// - visible-bottom：可视区域底部相对初始包含块底部的 inset（负值：Safari 标签页的撑高、主屏幕模式的补齐）
+@function visible-top() {
+  @return browser-bars();
+}
+
+@function visible-bottom() {
+  @return calc(-1 * (#{browser-bars()} + #{viewport-gap()}));
+}
+
 /// 半透明的 token 颜色，例如 scrim 遮罩、state layer。
 @function alpha($name, $amount) {
   @return color-mix(in srgb, color($name) $amount, transparent);

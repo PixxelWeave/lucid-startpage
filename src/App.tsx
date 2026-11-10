@@ -110,6 +110,9 @@ function App() {
         )}
       </div>
 
+      {/* 资源库的模糊蒙层：随文档铺满（含手机 Safari 撑高到工具栏后面的部分），不放在只覆盖可视区域的主界面里 */}
+      <div className={cx(styles.backdrop, expanded && styles.backdropVisible)} aria-hidden="true" />
+
       <main
         className={cx(
           styles.app,
@@ -128,8 +131,6 @@ function App() {
         <header ref={heroRef} className={styles.hero} aria-hidden={expanded}>
           {settings.showClock && <Clock settings={settings} />}
         </header>
-
-        <div className={styles.backdrop} aria-hidden="true" />
 
         <section
           className={styles.panel}

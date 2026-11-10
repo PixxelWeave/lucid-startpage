@@ -124,8 +124,9 @@ export function Menu({
     }
 
     const clamp = (v: number, max: number) => Math.min(Math.max(EDGE, v), Math.max(EDGE, max))
-    el.style.left = `${clamp(alignRight ? right - width : left, vw - EDGE - width)}px`
-    el.style.top = `${clamp(placeAbove ? above - height : below, vh - EDGE - height)}px`
+    // 以上为可视区域坐标；菜单是 absolute（相对文档），加上页面的滚动量
+    el.style.left = `${clamp(alignRight ? right - width : left, vw - EDGE - width) + window.scrollX}px`
+    el.style.top = `${clamp(placeAbove ? above - height : below, vh - EDGE - height) + window.scrollY}px`
     // 从靠近锚点的角展开
     el.style.transformOrigin = `${alignRight ? 'right' : 'left'} ${placeAbove ? 'bottom' : 'top'}`
     if (focusFirst) el.querySelector<HTMLElement>('[role=menuitem]')?.focus()

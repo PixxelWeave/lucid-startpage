@@ -7,7 +7,8 @@ import styles from './Background.module.scss'
 
 /**
  * 自定义背景图层，位于页面最底层。
- * <body> 上先铺模糊占位图（paint.ts），原图加载完成后在此淡入；两者都叠加同样的遮罩。
+ * <body> 上先铺模糊占位图（paint.ts，首屏渲染前同步铺上）；本图层同样先显示占位图，原图加载完成后淡入。
+ * 手机 Safari 标签页中本图层向上下延伸到工具栏后面（见 Background.module.scss）。
  */
 export function Background() {
   const { settings } = useSettings()

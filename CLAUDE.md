@@ -22,6 +22,7 @@
 - 圆角 `t.radius(lg)`、间距 `t.space(4)`、阴影 `t.elevation(2)`
 - 字体 `@include t.type(body-large)`（不要单独写 font-size / font-weight / line-height）
 - 动效 `t.duration(medium)` / `t.easing(standard)`；依次出现用 `t.stagger(delay | step)`；浮层（Modal / Menu / Snackbar）的出现与退场统一用 `lib/usePresence.ts`：打开时显示、CSS `@starting-style` 播放进场；关闭时先加 `[data-closing]` 播放退场过渡，结束后再关闭（Safari 不支持 `overlay`，不能依赖 allow-discrete）。新浮层组件同样接入它，样式里写好 `[data-closing]` 状态；交互态 `@include t.state-layer(on-surface)`；模糊 `t.blur(md)`；网格尺寸 `t.layout(tile-width)` / 列数 `t.grid-cols()`
+- **iOS Safari（必读 [docs/ios-safari.md](docs/ios-safari.md)）**：不要用 `position: fixed`——手机 Safari 会从贴边的 fixed 层（即使透明）取色涂状态栏与工具栏，破坏沉浸式。界面元素用 absolute 放在可视区域（页面停在固定的滚动位置），铺满整页的层相对 `#root` 铺满文档；对话框 / 菜单 / 提示条等顶层元素用 absolute + `t.visible-top()` / `t.visible-bottom()`。页面本身不滚动，滚动位置由 `lib/viewportGap.ts`、`lib/keepScrollTop.ts` 控制
 - 移动端：页面 `viewport-fit=cover` 铺满全屏，贴边元素用 `t.safe-area(top)` 等加上安全区；紧凑布局断点 `@include t.compact { }`，TS 中用 `useMediaQuery(COMPACT_QUERY)`（`lib/useMediaQuery.ts`，两处需一致）。iOS 主屏幕模式（透明状态栏）下文档高度比屏幕短一截、底部露出黑条，`lib/viewportGap.ts` 测出缺口写入 `--viewport-gap`，只用于补齐 `html` 的高度；fixed 元素本来就按整个屏幕排布，不要补（真机实测补了会伸出屏幕底边）。Modal 传 `sheet` 时在紧凑布局下变为底部 sheet（`data-sheet-grab` 区域可下拉关闭），设置弹窗在手机上为两级菜单
 - 用户可选的字体（如时钟）：`@include t.font-family(serif)` / `@include t.font-weight(light)`，一般文字仍用 `t.type(...)`
 - 需要新值时先在 token 文件里加 token，再使用；不要在组件里写字面量。stylelint 会拦截字面量颜色、圆角、字号、间距；未知 token 名会在 Sass 编译期报错。
