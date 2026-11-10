@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>新标签页</title>
+    <style>
+      /* 跳转前的一瞬间与 Lucid 的页面底色一致，避免白屏闪一下 */
+      html {
+        background: #f9f9ff;
+      }
+      @media (prefers-color-scheme: dark) {
+        html {
+          background: #111318;
+        }
+      }
+    </style>
+    <!-- 扩展页面不允许内联脚本，跳转逻辑在单独的文件里 -->
+    <script src="newtab.js"></script>
+  </head>
+  <body></body>
+</html>

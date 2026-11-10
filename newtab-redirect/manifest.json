@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Lucid 新标签页",
+  "description": "新标签页跳转到 Lucid 网页版（GitHub Pages），与启动页、主页使用同一份数据",
+  "version": "1.0.0",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  }
+}

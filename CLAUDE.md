@@ -9,6 +9,7 @@
 - `pnpm zip` —— 构建并打包为 `startpage-extension.zip`
 - `pnpm build:web` —— 网页版（`--mode web`）输出到 `dist-web/`：不生成扩展 manifest，改为 Web App manifest、iOS 主屏幕图标（满版，由 `fullBleedIcon()` 从同一个 SVG 派生）与 theme-color。两版共用同一份代码，运行时用 `lib/env.ts` 的 `isExtension` 区分
 - GitHub Pages：推送到 main 时由 `.github/workflows/deploy-pages.yml` 构建网页版并发布（`BASE_PATH=/仓库名/`，网页版支持部署在子路径下；index.html 里的 `/xxx` 由 vite 自动加前缀，插件注入的链接与 manifest 也已按 base 处理，新增根路径引用时注意）
+- `newtab-redirect/`：独立的极简扩展（无权限、无构建），新标签页跳转到 GitHub Pages 上的网页版，使新标签页与启动页 / 主页共用同一份数据。直接“加载已解压的扩展程序”使用；网址写在 `newtab.js`
 - `pnpm lint` —— oxlint + stylelint，提交前必须通过
 - `pnpm icons:sync` —— 从 iTab 图标库重新抓取图标索引（域名、名称、图案路径、底色），生成 `src/features/nav/icon-library.json`（已提交，不必每次运行）
 
