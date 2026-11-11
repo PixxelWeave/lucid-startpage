@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Button,
   Card,
@@ -19,6 +19,15 @@ import {
 } from '@/components/ui'
 import Clock from '@/components/Clock/Clock'
 import { formatDate } from '@/components/Clock/format'
+import { BackgroundCropDialog } from '@/features/background/BackgroundCropDialog'
+import { BackgroundView } from '@/features/background/BackgroundView'
+import {
+  backgroundAspect,
+  cropFromSettings,
+  cropToSettings,
+  DEFAULT_CROP,
+  type BackgroundCrop,
+} from '@/features/background/crop'
 import { pruneBackgroundImages, saveBackgroundImage } from '@/features/background/storage'
 import { useBackgroundImage } from '@/features/background/useBackgroundImage'
 import type { NavItemsApi } from '@/features/nav/useNavItems'
@@ -115,6 +124,13 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
   const [processingImage, setProcessingImage] = useState(false)
   const background = useBackgroundImage(settings.backgroundImage)
   const hasBackground = background.status === 'ready'
+  /**
+   * 裁切弹窗。新选的图片（pending）先裁切，点“完成”才替换当前背景，取消则删除；
+   * 调整现有图片时 pending 为 null。关闭后保留内容，退场动画期间图片不消失
+   */
+  const [cropOpen, setCropOpen] = useState(false)
+  const [pending, setPending] = useState<{ id: string; url: string } | null>(null)
+  useEffect(() => (pending ? () => URL.revokeObjectURL(pending.url) : undefined), [pending])
   /** 关于 → 诊断信息：点击时读取，排查手机布局问题用 */
   const [diagnostics, setDiagnostics] = useState<Record<string, string> | null>(null)
   /** 日期格式示例用（打开设置时的日期即可） */
@@ -134,8 +150,8 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
     setPrevOpen(open)
     if (open) setMobileSectionId(null)
   }
-  // 手机上背景预览按屏幕的实际比例（瘦长）显示，更接近真实效果
-  const screenRatio = `${window.innerWidth} / ${window.innerHeight}`
+  // 背景预览按背景图层（视口）的实际比例显示，与裁切取景一致
+  const screenRatio = backgroundAspect()
   const openMobileSection = (id: SectionId | null) => {
     setMobileDirection(id ? 'forward' : 'back')
     setMobileSectionId(id)
@@ -159,8 +175,14 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
       confirmLabel: '导入',
       onConfirm: () => {
         nav.replaceAll(backup.items)
-        // 背景图片只存在本机，导入时保留当前的
-        if (backup.settings) updateSettings({ ...backup.settings, backgroundImage: settings.backgroundImage })
+        // 背景图片只存在本机，导入时保留当前的图片与裁切
+        if (backup.settings) {
+          updateSettings({
+            ...backup.settings,
+            backgroundImage: settings.backgroundImage,
+            ...cropToSettings(cropFromSettings(settings)),
+          })
+        }
       },
     })
   }
@@ -169,9 +191,9 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
     if (!file) return
     setProcessingImage(true)
     try {
-      const id = await saveBackgroundImage(file)
-      updateSettings({ backgroundImage: id })
-      pruneBackgroundImages(id).catch(console.error)
+      const saved = await saveBackgroundImage(file)
+      setPending({ id: saved.id, url: URL.createObjectURL(saved.image) })
+      setCropOpen(true)
     } catch (err) {
       console.error('Failed to save background image', err)
       setConfirmation({
@@ -181,6 +203,22 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
     } finally {
       setProcessingImage(false)
     }
+  }
+
+  const saveCrop = (crop: BackgroundCrop) => {
+    setCropOpen(false)
+    if (pending) {
+      updateSettings({ backgroundImage: pending.id, ...cropToSettings(crop) })
+      pruneBackgroundImages(pending.id).catch(console.error)
+    } else {
+      updateSettings(cropToSettings(crop))
+    }
+  }
+
+  const cancelCrop = () => {
+    setCropOpen(false)
+    // 放弃新选的图片：删除除当前背景以外的所有图片
+    if (pending) pruneBackgroundImages(settings.backgroundImage).catch(console.error)
   }
 
   const homeSlots = settings.homeColumns * settings.homeRows
@@ -388,15 +426,12 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
         </Card>
         <Card>
           {hasBackground ? (
-            <div
-              className={cx(styles.backgroundPreview, styles.backgroundPreviewImage)}
-              style={
-                {
-                  backgroundImage: `url(${background.url})`,
-                  '--preview-dim': `${settings.backgroundDim}%`,
-                  '--screen-ratio': screenRatio,
-                } as CSSProperties
-              }
+            <BackgroundView
+              className={styles.backgroundPreview}
+              style={{ '--screen-ratio': screenRatio } as CSSProperties}
+              image={background}
+              crop={cropFromSettings(settings)}
+              dim={settings.backgroundDim}
               role="img"
               aria-label="当前背景图片预览"
             />
@@ -414,6 +449,18 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
             disabled={processingImage}
             onClick={() => imageInput.current?.click()}
           />
+          {hasBackground && (
+            <ListItem
+              title="调整位置和缩放"
+              description="按当前窗口的比例取景，拖动或缩放选择显示的部分"
+              leading={<IconTile icon="crop" tone="tertiary" />}
+              trailing={<Icon name="chevron-right" />}
+              onClick={() => {
+                setPending(null)
+                setCropOpen(true)
+              }}
+            />
+          )}
           {hasBackground && (
             <ListItem
               title="遮罩"
@@ -655,6 +702,15 @@ export function SettingsDialog({ open, onClose, nav }: SettingsDialogProps) {
         </div>
         )}
       </Modal>
+
+      <BackgroundCropDialog
+        open={cropOpen}
+        image={pending ?? (hasBackground ? background : null)}
+        initialCrop={pending ? DEFAULT_CROP : cropFromSettings(settings)}
+        dim={settings.backgroundDim}
+        onCancel={cancelCrop}
+        onSave={saveCrop}
+      />
 
       <Modal
         open={confirmation !== null}

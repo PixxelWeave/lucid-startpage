@@ -121,7 +121,8 @@
   color: t.color(on-surface-variant);
 }
 
-// 外观 › 背景图片预览：无图时为占位提示；有图时叠加与首页相同的 surface 遮罩
+// 外观 › 背景图片预览：按背景图层（视口）的比例（--screen-ratio，由 TSX 写入），
+// 与首页同样的裁切与遮罩（BackgroundView）；无图时为占位提示
 .background-preview {
   @include t.type(body-medium);
   @include t.flex-center;
@@ -129,30 +130,21 @@
   position: relative;
   flex-direction: column;
   gap: t.space(2);
-  aspect-ratio: 16 / 9;
-  max-height: 200px;
-  margin: t.space(4) t.space(4) t.space(1);
+  height: 200px;
+  aspect-ratio: var(--screen-ratio, 16 / 9);
+  margin: t.space(4) auto t.space(1);
   overflow: hidden;
   border-radius: t.radius(md);
   background: t.color(surface-container-high) center / cover no-repeat;
   color: t.color(on-surface-variant);
 }
 
-// 手机：按屏幕比例（--screen-ratio，由 TSX 写入）显示瘦长的预览，居中
+// 手机：瘦长的预览按宽度排布
 @include t.compact {
   .background-preview {
     width: 45%;
-    max-height: none;
-    margin-inline: auto;
-    aspect-ratio: var(--screen-ratio, 9 / 19.5);
+    height: auto;
   }
-}
-
-.background-preview-image::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: t.alpha(surface, var(--preview-dim, 0%));
 }
 
 // ---- 紧凑布局（手机）：底部 sheet，两级菜单 ---------------------------------

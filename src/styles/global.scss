@@ -105,11 +105,13 @@ body {
 }
 
 // 自定义背景图：首屏先在画布（<body> 的背景）上铺模糊占位图 + 遮罩（变量由 features/background/paint.ts 写入），
-// 原图由 <Background> 图层淡入覆盖。按整个文档 cover，与 <Background> 图层（同样铺满文档）重合
+// 随后由 <Background> 图层覆盖。按整个文档铺，与 <Background> 图层（同样铺满文档）重合；
+// 裁切的位置与缩放由 paint.ts 换算成 --background-position / --background-size
 :root[data-background] body {
   background:
     linear-gradient(t.alpha(surface, var(--background-dim)) 0 0),
-    var(--background-placeholder) center / cover no-repeat t.color(surface);
+    var(--background-placeholder) var(--background-position, center) / var(--background-size, cover) no-repeat
+      t.color(surface);
 }
 
 // 触屏：文字不可选中，长按不弹出系统菜单（长按留给图标菜单 / 拖动）；输入框仍可选中、编辑

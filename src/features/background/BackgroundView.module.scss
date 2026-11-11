@@ -1,0 +1,36 @@
+// 裁切显示（模型见 crop.ts）：cover + object-position 定位，再以同一点为原点放大，放大后仍铺满容器。
+// 放大的图片会超出容器，overflow 裁掉（否则会撑大文档的可滚动区域）。
+// 遮罩用 surface 色：浅色主题提亮、深色主题压暗，两种主题下文字对比度都会提高。
+
+.view {
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: t.alpha(surface, var(--dim, 0%));
+  }
+}
+
+.placeholder,
+.image {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--crop-x) var(--crop-y);
+  transform: scale(var(--crop-zoom));
+  transform-origin: var(--crop-x) var(--crop-y);
+}
+
+.image {
+  opacity: 0;
+  transition: opacity t.duration(long) t.easing(standard);
+}
+
+.loaded .image {
+  opacity: 1;
+}

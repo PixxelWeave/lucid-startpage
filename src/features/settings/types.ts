@@ -29,6 +29,10 @@ export interface Settings {
   backgroundImage: string | null
   /** 背景图片上的遮罩浓度（%），用于提高文字可读性 */
   backgroundDim: number
+  /** 背景图片裁切：水平 / 垂直位置（%，0 贴左 / 上）与相对铺满的放大倍数（%），见 features/background/crop.ts */
+  backgroundX: number
+  backgroundY: number
+  backgroundZoom: number
 }
 
 /** 数值类设置的取值范围 */
@@ -38,7 +42,13 @@ export const SETTING_RANGES = {
   homeTopOffset: { min: 0, max: 40 },
   clockOpacity: { min: 20, max: 100 },
   backgroundDim: { min: 0, max: 80 },
+  backgroundX: { min: 0, max: 100 },
+  backgroundY: { min: 0, max: 100 },
+  backgroundZoom: { min: 100, max: 400 },
 } as const
+
+/** 不取整的数值设置（拖动裁切需要连续的值） */
+const CONTINUOUS: readonly NumericKey[] = ['backgroundX', 'backgroundY', 'backgroundZoom']
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
@@ -56,6 +66,9 @@ export const DEFAULT_SETTINGS: Settings = {
   homeTopOffset: 18,
   backgroundImage: null,
   backgroundDim: 20,
+  backgroundX: 50,
+  backgroundY: 50,
+  backgroundZoom: 100,
 }
 
 const THEMES: readonly ThemeMode[] = ['system', 'light', 'dark']
@@ -75,7 +88,7 @@ export function parseSettings(raw: unknown): Settings | null {
     const v = r[key]
     if (typeof v !== 'number' || !Number.isFinite(v)) return DEFAULT_SETTINGS[key]
     const { min, max } = SETTING_RANGES[key]
-    return Math.min(max, Math.max(min, Math.round(v)))
+    return Math.min(max, Math.max(min, CONTINUOUS.includes(key) ? v : Math.round(v)))
   }
   const oneOf = <K extends keyof Settings>(key: K, values: readonly Settings[K][]) =>
     values.includes(r[key] as Settings[K]) ? (r[key] as Settings[K]) : DEFAULT_SETTINGS[key]
@@ -97,6 +110,9 @@ export function parseSettings(raw: unknown): Settings | null {
     homeTopOffset: int('homeTopOffset'),
     backgroundImage: typeof r.backgroundImage === 'string' ? r.backgroundImage : null,
     backgroundDim: int('backgroundDim'),
+    backgroundX: int('backgroundX'),
+    backgroundY: int('backgroundY'),
+    backgroundZoom: int('backgroundZoom'),
   }
 }
 

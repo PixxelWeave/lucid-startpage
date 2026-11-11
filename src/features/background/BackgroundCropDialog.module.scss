@@ -1,0 +1,65 @@
+// 取景舞台：图片按裁切摆放，取景框（与视口同比例）外压暗
+
+.stage {
+  @include t.focus-ring;
+
+  position: relative;
+  flex-shrink: 0;
+  height: 360px;
+  overflow: hidden;
+  border-radius: t.radius(lg);
+  background: t.color(surface-container-highest);
+  cursor: grab;
+
+  // 拖动 / 捏合交给脚本处理，不让浏览器滚动或缩放页面
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  // 手机 sheet：占满内容区的剩余高度，取景框更接近真实屏幕
+  @include t.compact {
+    flex: 1;
+    height: auto;
+    min-height: 240px;
+  }
+}
+
+.image {
+  position: absolute;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+// 取景框：框内叠加与首页相同的遮罩，框外用超宽的描边压暗（舞台 overflow 裁掉多余部分）
+.frame {
+  position: absolute;
+  border-radius: t.radius(md);
+  outline: 100vmax solid t.alpha(scrim, 56%);
+  background: t.alpha(surface, var(--dim, 0%));
+  pointer-events: none;
+}
+
+.zoom {
+  display: flex;
+  flex-shrink: 0;
+  gap: t.space(4);
+  align-items: center;
+
+  > :last-child {
+    flex: 1;
+  }
+}
+
+.zoom-label {
+  @include t.type(label-large);
+
+  color: t.color(on-surface-variant);
+}
+
+// 操作区左侧
+.reset {
+  margin-right: auto;
+}

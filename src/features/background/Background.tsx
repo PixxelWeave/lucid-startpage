@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSettings } from '@/features/settings/SettingsContext'
-import { cx } from '@/lib/cx'
+import { BackgroundView } from './BackgroundView'
+import { cropFromSettings } from './crop'
 import { paintBackground } from './paint'
 import { useBackgroundImage } from './useBackgroundImage'
 import styles from './Background.module.scss'
@@ -13,26 +14,29 @@ import styles from './Background.module.scss'
 export function Background() {
   const { settings } = useSettings()
   const image = useBackgroundImage(settings.backgroundImage)
-  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
+  /** 原图长宽比，供首屏占位图按同样的缩放铺底（paint.ts） */
+  const [ratio, setRatio] = useState<{ url: string; value: number } | null>(null)
+  const crop = cropFromSettings(settings)
 
   const placeholder = image.status === 'ready' ? image.placeholder : null
+  const imageRatio = image.status === 'ready' && ratio?.url === image.url ? ratio.value : undefined
   const settled = image.status !== 'loading' && image.status !== 'error'
+  const { x, y, zoom } = crop
   useEffect(() => {
     // 读取中或出错时保留现有占位图，避免闪烁
     if (!settled) return
-    paintBackground(placeholder ? { placeholder, dim: settings.backgroundDim } : null)
-  }, [settled, placeholder, settings.backgroundDim])
+    paintBackground(placeholder ? { placeholder, dim: settings.backgroundDim, x, y, zoom, ratio: imageRatio } : null)
+  }, [settled, placeholder, settings.backgroundDim, x, y, zoom, imageRatio])
 
   if (image.status !== 'ready') return null
   return (
-    <div className={cx(styles.background, loadedUrl === image.url && styles.loaded)} aria-hidden="true">
-      <img
-        className={styles.image}
-        src={image.url}
-        alt=""
-        decoding="async"
-        onLoad={() => setLoadedUrl(image.url)}
-      />
-    </div>
+    <BackgroundView
+      className={styles.background}
+      image={image}
+      crop={crop}
+      dim={settings.backgroundDim}
+      aria-hidden="true"
+      onImageLoad={(img) => setRatio({ url: image.url, value: img.naturalWidth / img.naturalHeight })}
+    />
   )
 }

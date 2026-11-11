@@ -34,12 +34,12 @@ function targetSide() {
   return Math.min(3840, Math.max(2560, Math.round(screenSide)))
 }
 
-/** 压缩并保存图片，返回新的图片 id。 */
-export async function saveBackgroundImage(file: File): Promise<string> {
+/** 压缩并保存图片，返回新的图片 id 与压缩结果（裁切前预览用，不经过下方的共享缓存）。 */
+export async function saveBackgroundImage(file: File): Promise<{ id: string } & BackgroundRecord> {
   const { blob, placeholder } = await compressImage(file, targetSide())
   const id = createId()
   await idbSet(keyOf(id), { image: blob, placeholder } satisfies BackgroundRecord)
-  return id
+  return { id, image: blob, placeholder }
 }
 
 /** 删除除 keepId 以外的所有背景图片（包括意外中断留下的孤儿数据）。 */
