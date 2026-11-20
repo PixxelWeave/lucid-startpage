@@ -11,6 +11,7 @@ import { applyCachedTheme } from '@/features/settings/theme'
 import { trackInputModality } from '@/lib/inputModality'
 import { keepScrollTop } from '@/lib/keepScrollTop'
 import { preventZoom } from '@/lib/preventZoom'
+import { registerServiceWorker } from '@/lib/serviceWorker'
 import { watchBrowserBars, watchViewportGap } from '@/lib/viewportGap'
 
 // 设置异步加载前先应用上次的主题，避免闪烁
@@ -26,6 +27,9 @@ preventZoom()
 keepScrollTop()
 // 鼠标 / 触屏操作时不显示焦点框（见 lib/inputModality.ts）
 trackInputModality()
+
+// 网页版离线缓存（见 lib/serviceWorker.ts）
+registerServiceWorker()
 
 // 提前加载图标库，与读取存储并行
 void loadIconLibrary()

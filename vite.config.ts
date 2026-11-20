@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { join, resolve, sep } from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 import { Resvg } from '@resvg/resvg-js'
 import react from '@vitejs/plugin-react'
@@ -104,6 +106,28 @@ function webAppFiles(): Map<string, { type: string; body: string | Uint8Array }>
   return files
 }
 
+/** Service Worker 源文件（不经打包，构建时注入清单后输出为 sw.js） */
+const SW_SOURCE = new URL('./src/service-worker.js', import.meta.url)
+
+/**
+ * 输出 sw.js：注入本次构建的版本号（由全部输出文件的路径与内容计算）与预缓存清单。
+ * 字体（woff2，多个语言子集，大多用不到）不预缓存，用到时由 Service Worker 再缓存。
+ */
+function writeServiceWorker(outDir: string) {
+  const files = readdirSync(outDir, { recursive: true, encoding: 'utf8' })
+    .map((file) => file.split(sep).join('/'))
+    .filter((file) => file !== 'sw.js' && statSync(join(outDir, file)).isFile())
+    .sort()
+  const hash = createHash('sha256')
+  for (const file of files) hash.update(file).update(readFileSync(join(outDir, file)))
+  const manifest = {
+    version: hash.digest('hex').slice(0, 12),
+    precache: files.filter((file) => !file.endsWith('.woff2')),
+  }
+  const source = readFileSync(SW_SOURCE, 'utf8')
+  writeFileSync(join(outDir, 'sw.js'), `self.__LUCID_SW__ = ${JSON.stringify(manifest)}\n\n${source}`)
+}
+
 /**
  * 网页版：可“添加到主屏幕”的 Web App（manifest、iOS 主屏幕图标、状态栏样式）。
  * 构建网页版时输出文件；开发服务器上同样提供，便于在手机上直接测试主屏幕模式。
@@ -113,11 +137,13 @@ function webApp(): Plugin {
   const getFiles = () => (files ??= webAppFiles())
   // 部署路径前缀（vite 的 base），注入的链接要带上；index.html 里写的 /xxx 由 vite 自动加前缀
   let base = '/'
+  let outDir: string | null = null
 
   return {
     name: 'lucid:web-app',
     configResolved(config) {
       base = config.base
+      if (config.command === 'build') outDir = resolve(config.root, config.build.outDir)
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
@@ -131,6 +157,10 @@ function webApp(): Plugin {
       for (const [fileName, file] of getFiles()) {
         this.emitFile({ type: 'asset', fileName, source: file.body })
       }
+    },
+    // 所有文件（含 public/ 的复制）写完之后再生成 Service Worker 的清单
+    closeBundle() {
+      if (outDir) writeServiceWorker(outDir)
     },
     transformIndexHtml() {
       const meta = (name: string, content: string, media?: string) => ({
