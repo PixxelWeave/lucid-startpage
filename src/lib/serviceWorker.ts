@@ -29,6 +29,10 @@ export function registerServiceWorker() {
     if (document.visibilityState === 'hidden') reloadIfIdle()
   })
 
+  // 申请持久存储：浏览器空间紧张时不清理本站数据（导航与设置、背景图片、离线缓存与图标缓存）。
+  // 由浏览器自行决定是否批准（如常用、已安装到主屏幕），不弹窗
+  navigator.storage?.persist?.().catch(() => {})
+
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`)

@@ -9,7 +9,12 @@
 // - 安装时预缓存本次构建的全部文件（字体除外，用到时再缓存），完成后立即接管（skipWaiting）
 // - 打开页面（导航请求）：直接返回当前版本缓存的 index.html，与同版本的 JS / CSS 配套
 // - 同源的其他请求：缓存优先；assets/ 下带哈希的文件（如字体）首次请求后存入运行时缓存
-// - 跨域请求（iTab 图标 CDN、Google favicon）不拦截，交给浏览器自身的 HTTP 缓存
+// - 导航图标（iTab 图标 CDN、Google favicon）：先返回缓存，后台重新请求并更新（stale-while-revalidate），
+//   图标秒出、离线可显示；后台请求先经过浏览器的 HTTP 缓存，新鲜时不产生网络流量。
+//   iTab 允许跨域，按 CORS 请求后正常缓存；Google favicon 不允许跨域，只能缓存不透明响应
+//   （Chrome 计算配额时每个按约 7MB 记账，不占真实空间），因此分开存放、各设上限。
+//   Google favicon 会随机跳转到 t0–t3.gstatic.com，按原始请求地址缓存，避免跳转目标变化导致不命中
+// - 其他跨域请求不拦截
 // - 激活时保留上一个版本的预缓存：已经打开的旧页面之后懒加载的旧文件仍然可用（新部署后服务器上已没有）
 //
 // 更新流程：页面打开时浏览器检查 sw.js（不走 HTTP 缓存）→ 新版本安装并接管 →
@@ -20,6 +25,11 @@ const { version: VERSION, precache: PRECACHE } = self.__LUCID_SW__
 const PREFIX = 'lucid-precache-'
 const PRECACHE_NAME = `${PREFIX}${VERSION}`
 const RUNTIME_NAME = 'lucid-runtime'
+/** 导航图标缓存：名称 → 条目上限（超出时删除最久未更新的） */
+const ICON_CACHES = {
+  itab: { name: 'lucid-icons-itab', limit: 500 },
+  favicon: { name: 'lucid-icons-favicon', limit: 150 },
+}
 /** 保留的预缓存版本数（当前 + 上一个） */
 const KEEP_VERSIONS = 2
 
@@ -55,6 +65,13 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   if (request.method !== 'GET') return
   const url = new URL(request.url)
+
+  const iconKind = iconKindOf(url)
+  if (iconKind) {
+    event.respondWith(staleWhileRevalidate(event, request, iconKind))
+    return
+  }
+
   if (url.origin !== scope.origin || !url.pathname.startsWith(scope.pathname)) return
 
   if (request.mode === 'navigate') {
@@ -82,4 +99,47 @@ async function cacheFirst(event, request, url) {
     event.waitUntil(caches.open(RUNTIME_NAME).then((cache) => cache.put(request, copy)))
   }
   return response
+}
+
+// ---- 导航图标 ----
+
+/** 图标地址见 src/features/nav/icon.ts（iTab CDN）与 src/lib/url.ts（Google favicon） */
+function iconKindOf(url) {
+  if (url.hostname === 'files.itab.link') return 'itab'
+  if (url.hostname === 'www.google.com' && url.pathname === '/s2/favicons') return 'favicon'
+  return null
+}
+
+async function staleWhileRevalidate(event, request, kind) {
+  const cache = await caches.open(ICON_CACHES[kind].name)
+  const cached = await cache.match(request)
+  const network = fetchIcon(request, kind)
+  // 先注册写缓存：响应到达时先 clone，再交给 <img> 读取；写入在后台进行，不拖慢显示
+  const update = network.then(async (response) => {
+    if (!isCacheable(response)) return
+    await cache.put(request, response.clone())
+    await trimCache(kind)
+  })
+  // 离线等失败：有缓存时忽略；没有缓存时错误交给 <img>（页面退回首字）
+  event.waitUntil(update.catch(() => {}))
+  return cached ?? network
+}
+
+/** iTab 按 CORS 请求，得到可读的正常响应；失败时退回 <img> 原本的请求方式 */
+function fetchIcon(request, kind) {
+  if (kind !== 'itab') return fetch(request)
+  return fetch(request.url, { mode: 'cors', credentials: 'omit' }).catch(() => fetch(request))
+}
+
+/** 不透明响应读不到状态码，只能照单全收（Google 对未知站点返回的默认图标由页面按尺寸过滤） */
+function isCacheable(response) {
+  return response.ok || response.type === 'opaque'
+}
+
+/** 超出上限时删除最早写入的条目（每次使用都会重新写入，等同于最久未使用） */
+async function trimCache(kind) {
+  const { name, limit } = ICON_CACHES[kind]
+  const cache = await caches.open(name)
+  const keys = await cache.keys()
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - limit)).map((key) => cache.delete(key)))
 }
